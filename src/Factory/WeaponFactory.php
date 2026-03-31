@@ -4,17 +4,16 @@ declare(strict_types=1);
 
 namespace App\Factory;
 
-use App\Entity\Equipment;
 use App\Entity\EquipmentTemplate;
+use App\Entity\Weapon;
 
-class EquipmentFactory
+class WeaponFactory
 {
-    public function createOneFromEquipmentTemplate(EquipmentTemplate $equipmentTemplate): Equipment
+    public function createOneFromEquipmentTemplate(EquipmentTemplate $equipmentTemplate): Weapon
     {
-        $equipment = new Equipment();
-        $equipment
+        $weapon = new Weapon();
+        $weapon
             ->setName($equipmentTemplate->getName())
-            ->setCategory($equipmentTemplate->getCategory())
             ->setValue($equipmentTemplate->getValue())
             ->setCurrentDurabilityPoints($equipmentTemplate->getMaxDurability())
             ->setMaxDurabilityPoints($equipmentTemplate->getMaxDurability())
@@ -22,11 +21,6 @@ class EquipmentFactory
             ->setSpells($equipmentTemplate->getSpells())
             ->setSkills($equipmentTemplate->getSkills());
 
-        return $equipment;
-    }
-
-    private function generateBetweenMinAndMax(int $min, int $max): int
-    {
-        return rand($min, $max);
+        return $weapon;
     }
 }

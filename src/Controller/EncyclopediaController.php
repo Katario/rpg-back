@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Entity\EquipmentTemplate;
 use App\Entity\CharacterTemplate;
+use App\Entity\EquipmentTemplate;
 use App\Entity\Item;
 use App\Entity\MonsterTemplate;
 use App\Entity\NonPlayableCharacterTemplate;
@@ -20,8 +20,8 @@ use App\FormType\NonPlayableCharacterTemplateType;
 use App\FormType\SkillType;
 use App\FormType\SpellType;
 use App\FormType\TalentType;
-use App\Repository\EquipmentTemplateRepository;
 use App\Repository\CharacterTemplateRepository;
+use App\Repository\EquipmentTemplateRepository;
 use App\Repository\ItemRepository;
 use App\Repository\MonsterTemplateRepository;
 use App\Repository\NonPlayableCharacterTemplateRepository;
@@ -52,14 +52,14 @@ readonly class EncyclopediaController
 
     #[Route('/encyclopedia', name: 'show_encyclopedia', methods: ['GET'])]
     public function showEncyclopedia(
-        SpellRepository                        $spellRepository,
-        TalentRepository                       $talentRepository,
-        ItemRepository                         $itemRepository,
-        SkillRepository                        $skillRepository,
-        EquipmentTemplateRepository            $armamentTemplateRepository,
-        MonsterTemplateRepository              $monsterTemplateRepository,
+        SpellRepository $spellRepository,
+        TalentRepository $talentRepository,
+        ItemRepository $itemRepository,
+        SkillRepository $skillRepository,
+        EquipmentTemplateRepository $armamentTemplateRepository,
+        MonsterTemplateRepository $monsterTemplateRepository,
         NonPlayableCharacterTemplateRepository $nonPlayableCharacterTemplateRepository,
-        CharacterTemplateRepository            $characterTemplateRepository,
+        CharacterTemplateRepository $characterTemplateRepository,
     ): Response {
         $lastSpells = $spellRepository->getLastFiveSpells();
         $lastTalents = $talentRepository->getLastFiveTalents();
@@ -380,7 +380,7 @@ readonly class EncyclopediaController
         methods: ['GET', 'POST']
     )]
     public function createArmamentTemplate(
-        Request                     $request,
+        Request $request,
         EquipmentTemplateRepository $armamentTemplateRepository,
     ): Response|RedirectResponse {
         $form = $this->formFactory->create(ArmamentTemplateType::class);
@@ -418,7 +418,7 @@ readonly class EncyclopediaController
     #[Route('/encyclopedia/armaments/{id}', name: 'encyclopedia_show_armament_template', requirements: ['id' => '\d+'], methods: ['GET'])]
     public function showArmamentTemplate(
         EquipmentTemplateRepository $armamentTemplateRepository,
-        int                         $id,
+        int $id,
     ): Response {
         $armamentTemplate = $armamentTemplateRepository->find($id);
 
@@ -436,7 +436,7 @@ readonly class EncyclopediaController
         methods: ['GET']
     )]
     public function deleteArmamentTemplate(
-        int                         $id,
+        int $id,
         EquipmentTemplateRepository $armamentTemplateRepository,
     ): Response {
         $armamentTemplate = $armamentTemplateRepository->find($id);

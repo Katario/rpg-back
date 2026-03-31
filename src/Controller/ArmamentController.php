@@ -6,7 +6,9 @@ namespace App\Controller;
 
 use App\Entity\Equipment;
 use App\Entity\Game;
-use App\Factory\EquipmentFactory;
+use App\Entity\Weapon;
+use App\Factory\ArmorFactory;
+use App\Factory\WeaponFactory;
 use App\FormType\ArmamentType;
 use App\Repository\EquipmentRepository;
 use App\Repository\EquipmentTemplateRepository;
@@ -25,10 +27,10 @@ use Twig\Environment;
 class ArmamentController
 {
     public function __construct(
-        public Environment                   $twig,
+        public Environment $twig,
         public readonly FormFactoryInterface $formFactory,
-        private readonly RouterInterface     $router,
-        public EquipmentRepository           $armamentRepository,
+        private readonly RouterInterface $router,
+        public EquipmentRepository $armamentRepository,
     ) {
     }
 
@@ -113,20 +115,21 @@ class ArmamentController
     #[Route('/games/{gameId}/armaments/generate',
         name: 'generate_armament',
         requirements: ['gameId' => '\d+'],
-        methods: ['GET', 'POST']),
-    ]
+        methods: ['GET', 'POST']),]
     public function generateArmament(
-        Request                                        $request,
+        Request $request,
         #[MapEntity(mapping: ['gameId' => 'id'])] Game $game,
-        EquipmentFactory                               $armamentFactory,
-        EquipmentTemplateRepository                    $armamentTemplateRepository,
+        WeaponFactory $weaponFactory,
+        ArmorFactory $armorFactory,
+        EquipmentTemplateRepository $armamentTemplateRepository,
     ): Response|RedirectResponse {
         if ($request->get('armamentTemplateId')) {
             $armamentTemplate = $armamentTemplateRepository->find($request->get('armamentTemplateId'));
-            $armament = $armamentFactory->createOneFromEquipmentTemplate($armamentTemplate);
+            $factory = $armamentTemplate->getCategory() === 'weapon' ? $weaponFactory : $armorFactory;
+            $armament = $factory->createOneFromEquipmentTemplate($armamentTemplate);
             $armament->setGame($game);
         } else {
-            $armament = new Equipment();
+            $armament = new Weapon();
             $armament->setGame($game);
         }
 

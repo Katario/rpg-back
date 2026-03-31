@@ -6,18 +6,17 @@ namespace App\Fixtures\DataFixtures;
 
 use App\Fixtures\DataFixtures\Factory\ArmamentFactory;
 use App\Fixtures\DataFixtures\Factory\ArmamentTemplateFactory;
+use App\Fixtures\DataFixtures\Factory\BeingTalentFactory;
 use App\Fixtures\DataFixtures\Factory\CharacterClassFactory;
+use App\Fixtures\DataFixtures\Factory\KindTalentBonusFactory;
 use App\Fixtures\DataFixtures\Factory\CharacterFactory;
-use App\Fixtures\DataFixtures\Factory\CharacterTalentFactory;
 use App\Fixtures\DataFixtures\Factory\CharacterTemplateFactory;
 use App\Fixtures\DataFixtures\Factory\GameFactory;
 use App\Fixtures\DataFixtures\Factory\ItemFactory;
 use App\Fixtures\DataFixtures\Factory\KindFactory;
 use App\Fixtures\DataFixtures\Factory\MonsterFactory;
-use App\Fixtures\DataFixtures\Factory\MonsterTalentFactory;
 use App\Fixtures\DataFixtures\Factory\MonsterTemplateFactory;
 use App\Fixtures\DataFixtures\Factory\NonPlayableCharacterFactory;
-use App\Fixtures\DataFixtures\Factory\NonPlayableCharacterTalentFactory;
 use App\Fixtures\DataFixtures\Factory\NonPlayableCharacterTemplateFactory;
 use App\Fixtures\DataFixtures\Factory\SkillFactory;
 use App\Fixtures\DataFixtures\Factory\SpecieFactory;
@@ -163,21 +162,42 @@ class InitialFixtures extends Fixture implements FixtureGroupInterface
             'name' => 'Thunder Punch',
         ]);
 
-        TalentFactory::createOne([
-            'name' => 'Masonry',
-        ]);
-        TalentFactory::createOne([
-            'name' => 'Archery',
-        ]);
-        TalentFactory::createOne([
-            'name' => 'Mystic',
-        ]);
-        TalentFactory::createOne([
-            'name' => 'Hunt',
-        ]);
-        TalentFactory::createOne([
-            'name' => 'Armor',
-        ]);
+        TalentFactory::createOne(['name' => 'Acrobatie']);
+        $talentAlchimie = TalentFactory::createOne(['name' => 'Alchimie']);
+        TalentFactory::createOne(['name' => 'Altération']);
+        TalentFactory::createOne(['name' => 'Arme Contondante']);
+        $talentArmureLegere = TalentFactory::createOne(['name' => 'Armure légère']);
+        TalentFactory::createOne(['name' => 'Armure lourde']);
+        TalentFactory::createOne(['name' => 'Armurerie']);
+        $talentAthletisme = TalentFactory::createOne(['name' => 'Athlétisme']);
+        TalentFactory::createOne(['name' => 'Combat sans armure']);
+        TalentFactory::createOne(['name' => 'Destruction']);
+        TalentFactory::createOne(['name' => 'Discrétion']);
+        TalentFactory::createOne(['name' => 'Eloquence']);
+        TalentFactory::createOne(['name' => 'Enchantement']);
+        TalentFactory::createOne(['name' => 'Esquive']);
+        TalentFactory::createOne(['name' => 'Guérison']);
+        TalentFactory::createOne(['name' => 'Hache']);
+        TalentFactory::createOne(['name' => 'Illusion']);
+        TalentFactory::createOne(['name' => 'Invocation']);
+        TalentFactory::createOne(['name' => 'Lame Courte']);
+        TalentFactory::createOne(['name' => 'Lame Longue']);
+        TalentFactory::createOne(['name' => 'Lance']);
+        TalentFactory::createOne(['name' => 'Marchandage']);
+        $talentMysticisme = TalentFactory::createOne(['name' => 'Mysticisme']);
+        TalentFactory::createOne(['name' => 'Parade']);
+        $talentPrecision = TalentFactory::createOne(['name' => 'Précision']);
+        TalentFactory::createOne(['name' => 'Pugilat']);
+        TalentFactory::createOne(['name' => 'Sécurité']);
+
+        // Kind bonuses
+        KindTalentBonusFactory::createOne(['kind' => $human, 'talent' => $talentAthletisme, 'value' => 2]);
+        KindTalentBonusFactory::createOne(['kind' => $elf, 'talent' => $talentPrecision, 'value' => 5]);
+        KindTalentBonusFactory::createOne(['kind' => $elf, 'talent' => $talentMysticisme, 'value' => 3]);
+        KindTalentBonusFactory::createOne(['kind' => $dwarf, 'talent' => $talentAlchimie, 'value' => 5]);
+        KindTalentBonusFactory::createOne(['kind' => $dwarf, 'talent' => $talentArmureLegere, 'value' => 3]);
+        KindTalentBonusFactory::createOne(['kind' => $orc, 'talent' => $talentArmureLegere, 'value' => 4]);
+        KindTalentBonusFactory::createOne(['kind' => $orc, 'talent' => $talentAthletisme, 'value' => 2]);
 
         SpellFactory::createOne([
             'name' => 'Fire ball',
@@ -394,31 +414,31 @@ class InitialFixtures extends Fixture implements FixtureGroupInterface
             'items' => ItemFactory::randomRange(0, 3),
         ]);
 
-        CharacterTalentFactory::createMany(
-            15, // create 5 comments
+        BeingTalentFactory::createMany(
+            15,
             function () {
                 return [
-                    'character' => CharacterFactory::random(),
+                    'being' => CharacterFactory::random(),
                     'talent' => TalentFactory::new(),
                 ];
             }
         );
 
-        NonPlayableCharacterTalentFactory::createMany(
-            15, // create 5 comments
+        BeingTalentFactory::createMany(
+            15,
             function () {
                 return [
-                    'nonPlayableCharacter' => NonPlayableCharacterFactory::random(),
+                    'being' => NonPlayableCharacterFactory::random(),
                     'talent' => TalentFactory::new(),
                 ];
             }
         );
 
-        MonsterTalentFactory::createMany(
-            15, // create 5 comments
+        BeingTalentFactory::createMany(
+            15,
             function () {
                 return [
-                    'monster' => MonsterFactory::random(),
+                    'being' => MonsterFactory::random(),
                     'talent' => TalentFactory::new(),
                 ];
             }
@@ -434,40 +454,35 @@ class InitialFixtures extends Fixture implements FixtureGroupInterface
         ArmamentFactory::createOne([
             'name' => 'Armament Monster',
             'game' => $mainGame,
-            'isOwned' => true,
-            'monster' => MonsterFactory::random(),
+            'being' => MonsterFactory::random(),
             'spells' => SpellFactory::randomRange(0, 3),
             'skills' => SkillFactory::randomRange(0, 3),
         ]);
         ArmamentFactory::createOne([
             'name' => 'Armament NPC',
             'game' => $mainGame,
-            'isOwned' => true,
-            'nonPlayableCharacter' => NonPlayableCharacterFactory::random(),
+            'being' => NonPlayableCharacterFactory::random(),
             'spells' => SpellFactory::randomRange(0, 3),
             'skills' => SkillFactory::randomRange(0, 3),
         ]);
         ArmamentFactory::createOne([
             'name' => 'Armament Red 1',
             'game' => $mainGame,
-            'isOwned' => true,
-            'character' => $characterRed,
+            'being' => $characterRed,
             'spells' => SpellFactory::randomRange(0, 3),
             'skills' => SkillFactory::randomRange(0, 3),
         ]);
         ArmamentFactory::createOne([
             'name' => 'Armament Red 2',
             'game' => $mainGame,
-            'isOwned' => true,
-            'character' => $characterRed,
+            'being' => $characterRed,
             'spells' => SpellFactory::randomRange(0, 3),
             'skills' => SkillFactory::randomRange(0, 3),
         ]);
         ArmamentFactory::createOne([
             'name' => 'Armament Green',
             'game' => $mainGame,
-            'isOwned' => true,
-            'character' => $characterGreen,
+            'being' => $characterGreen,
             'spells' => SpellFactory::randomRange(0, 3),
             'skills' => SkillFactory::randomRange(0, 3),
         ]);

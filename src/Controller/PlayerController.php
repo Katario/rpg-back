@@ -23,17 +23,16 @@ class PlayerController
     public function showCharacterByToken(
         CharacterRepository $characterRepository,
         string $token,
-    ): Response
-    {
-        if (! $this->isMd5($token)) {
+    ): Response {
+        if (!$this->isMd5($token)) {
             throw new NotFoundHttpException('The token is not valid');
         }
 
         $character = $characterRepository->findOneBy([
-            'token' => $token
+            'token' => $token,
         ]);
 
-        if (! $character) {
+        if (!$character) {
             throw new NotFoundHttpException('The character doesn\'t exists!');
         }
 

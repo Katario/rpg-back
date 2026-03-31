@@ -1,5 +1,5 @@
 # Start with PHP 8.3 FPM (FastCGI Process Manager)
-FROM php:8.3-fpm
+FROM php:8.5-fpm
 
 # Update package list and install dependencies
 RUN apt-get update && apt-get install -y \
@@ -27,7 +27,6 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 RUN docker-php-ext-install \
     pgsql \
     pdo_pgsql \
-    mbstring \
     # Image metadata
     exif \
     # Process control
@@ -37,9 +36,8 @@ RUN docker-php-ext-install \
     # Image manipulation
     gd \
     intl \
-    zip \
-    # Code caching for performance
-    opcache
+    zip
+# mbstring et opcache sont compilés statiquement dans PHP 8.5
 
 RUN pecl install pcov && \
     docker-php-ext-enable pcov

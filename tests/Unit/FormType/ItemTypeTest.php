@@ -6,10 +6,12 @@ namespace App\Tests\Unit\FormType;
 
 use App\Entity\Item;
 use App\FormType\ItemType;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\CoversClass;
 use Symfony\Component\Form\Test\TypeTestCase;
 
 #[CoversClass(ItemType::class)]
+#[AllowMockObjectsWithoutExpectations]
 class ItemTypeTest extends TypeTestCase
 {
     public function testSubmitValidData(): void

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Entity;
 
-use App\Entity\Equipment;
 use App\Entity\Character;
+use App\Entity\Equipment;
 use App\Entity\Monster;
 use App\Entity\NonPlayableCharacter;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -21,7 +21,7 @@ class EquipmentTest extends TestCase
         $monster = new Monster();
         $monster->setName('Little Goblin');
 
-        $armament->setMonster($monster);
+        $armament->setBeing($monster);
 
         self::assertSame('Little Goblin', $armament->getOwnerName());
     }
@@ -35,7 +35,7 @@ class EquipmentTest extends TestCase
         $character->setName('Billy');
         $character->setLastName('O\'Neil');
 
-        $armament->setCharacter($character);
+        $armament->setBeing($character);
 
         self::assertSame('Billy O\'Neil', $armament->getOwnerName());
     }
@@ -49,7 +49,7 @@ class EquipmentTest extends TestCase
         $nonPlayableCharacter->setName('Jack');
         $nonPlayableCharacter->setLastName('Doe');
 
-        $armament->setNonPlayableCharacter($nonPlayableCharacter);
+        $armament->setBeing($nonPlayableCharacter);
 
         self::assertSame('Jack Doe', $armament->getOwnerName());
     }
@@ -61,39 +61,21 @@ class EquipmentTest extends TestCase
         self::assertNull($armament->getOwnerName());
     }
 
-    public function testOnlyOneOwnerWhenCharacterIsSet(): void
+    public function testIsOwnedWhenBeingIsSet(): void
     {
         $armament = new Equipment();
         $character = new Character();
-        $armament->setCharacter($character);
+        $armament->setBeing($character);
 
-        self::assertSame($character, $armament->getCharacter());
-        self::assertNull($armament->getNonPlayableCharacter());
-        self::assertNull($armament->getMonster());
+        self::assertSame($character, $armament->getBeing());
         self::assertTrue($armament->isOwned());
     }
 
-    public function testOnlyOneOwnerWhenNonPlayableCharacterIsSet(): void
+    public function testIsNotOwnedWhenBeingIsNull(): void
     {
         $armament = new Equipment();
-        $nonPlayableCharacter = new NonPlayableCharacter();
-        $armament->setNonPlayableCharacter($nonPlayableCharacter);
 
-        self::assertNull($armament->getCharacter());
-        self::assertSame($nonPlayableCharacter, $armament->getNonPlayableCharacter());
-        self::assertNull($armament->getMonster());
-        self::assertTrue($armament->isOwned());
-    }
-
-    public function testOnlyOneOwnerWhenMonsterIsSet(): void
-    {
-        $armament = new Equipment();
-        $monster = new Monster();
-        $armament->setMonster($monster);
-
-        self::assertNull($armament->getCharacter());
-        self::assertNull($armament->getNonPlayableCharacter());
-        self::assertSame($monster, $armament->getMonster());
-        self::assertTrue($armament->isOwned());
+        self::assertNull($armament->getBeing());
+        self::assertFalse($armament->isOwned());
     }
 }

@@ -7,8 +7,8 @@ namespace App\Controller;
 use App\Entity\Game;
 use App\Entity\User;
 use App\FormType\GameType;
-use App\Repository\EquipmentRepository;
 use App\Repository\CharacterRepository;
+use App\Repository\EquipmentRepository;
 use App\Repository\GameRepository;
 use App\Repository\MonsterRepository;
 use App\Repository\NonPlayableCharacterRepository;
@@ -81,11 +81,11 @@ class GameController
         methods: ['POST']
     )]
     public function deleteGame(
-        int                            $id,
-        Request                        $request,
-        EquipmentRepository            $armamentRepository,
-        MonsterRepository              $monsterRepository,
-        CharacterRepository            $characterRepository,
+        int $id,
+        Request $request,
+        EquipmentRepository $armamentRepository,
+        MonsterRepository $monsterRepository,
+        CharacterRepository $characterRepository,
         NonPlayableCharacterRepository $nonPlayableCharacterRepository,
     ): Response {
         $game = $this->gameRepository->find($id);

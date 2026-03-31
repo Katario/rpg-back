@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Character;
+use App\Entity\Game;
+use App\Entity\Kind;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepositoryInterface;
 use Doctrine\Persistence\ManagerRegistry;
@@ -17,6 +19,28 @@ class CharacterRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Character::class);
+    }
+
+    public function findDuplicate(string $name, Game $game, ?Kind $kind): ?Character
+    {
+        $qb = $this->createQueryBuilder('c')
+            ->where('c.name = :name')
+            ->andWhere('c.game = :game')
+            ->setParameter('name', $name)
+            ->setParameter('game', $game);
+
+        if ($kind) {
+            $qb->join('c.kind', 'k')
+                ->andWhere('k = :kind')
+                ->setParameter('kind', $kind);
+        }
+
+        return $qb->getQuery()->getOneOrNullResult();
+    }
+
+    public function findOneByToken(string $token): ?Character
+    {
+        return $this->findOneBy(['token' => $token]);
     }
 
     /** @return Character[] */

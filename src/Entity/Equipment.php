@@ -8,8 +8,12 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: EquipmentRepository::class)]
+#[ORM\Table(name: 'equipment')]
+#[ORM\InheritanceType('SINGLE_TABLE')]
+#[ORM\DiscriminatorColumn(name: 'category', type: 'string')]
+#[ORM\DiscriminatorMap(['weapon' => Weapon::class, 'armor' => Armor::class])]
 #[ORM\HasLifecycleCallbacks]
-class Equipment
+abstract class Equipment
 {
     use HasDateTimeTrait;
     use HasNoteTrait;
@@ -22,12 +26,11 @@ class Equipment
     #[ORM\Column(type: 'string')]
     private string $name;
 
-    // @TODO: Type it with an enum
-    #[ORM\Column(type: 'string')]
-    private string $category;
-
     #[ORM\Column(type: 'integer', nullable: true)]
     private int $value = 0;
+
+    #[ORM\Column(type: 'integer', options: ['default' => 0])]
+    private int $weight = 0;
 
     #[ORM\Column(type: 'integer')]
     private int $currentDurabilityPoints;
@@ -41,20 +44,15 @@ class Equipment
     #[ORM\Column(type: 'boolean', options: ['default' => false])]
     private bool $isOwned = false;
 
-    #[ORM\ManyToOne(targetEntity: Game::class, inversedBy: 'armaments')]
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $isEquipped = false;
+
+    #[ORM\ManyToOne(targetEntity: Game::class, inversedBy: 'equipments')]
     private Game $game;
 
-//    #[ORM\ManyToOne(targetEntity: Monster::class, inversedBy: 'armaments')]
-//    #[ORM\JoinColumn(onDelete: 'SET NULL')]
-//    private ?Monster $monster = null;
-
-//    #[ORM\ManyToOne(targetEntity: Character::class, inversedBy: 'armaments')]
-//    #[ORM\JoinColumn(onDelete: 'SET NULL')]
-//    private ?Character $character = null;
-
-//    #[ORM\ManyToOne(targetEntity: NonPlayableCharacter::class, inversedBy: 'armaments')]
-//    #[ORM\JoinColumn(onDelete: 'SET NULL')]
-//    private ?NonPlayableCharacter $nonPlayableCharacter = null;
+    #[ORM\ManyToOne(targetEntity: Being::class, inversedBy: 'equipments')]
+    #[ORM\JoinColumn(name: 'being_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
+    private ?Being $being = null;
 
     #[ORM\JoinTable(name: 'equipments_skills')]
     #[ORM\JoinColumn(name: 'equipment_id', referencedColumnName: 'id', onDelete: 'cascade')]
@@ -68,13 +66,13 @@ class Equipment
     #[ORM\ManyToMany(targetEntity: Spell::class)]
     private Collection $spells;
 
-    // @TODO: add enchantments
-
     public function __construct()
     {
         $this->skills = new ArrayCollection();
         $this->spells = new ArrayCollection();
     }
+
+    abstract public function getCategory(): string;
 
     public function getId(): ?int
     {
@@ -86,21 +84,9 @@ class Equipment
         return $this->name;
     }
 
-    public function setName(string $name): Equipment
+    public function setName(string $name): static
     {
         $this->name = $name;
-
-        return $this;
-    }
-
-    public function getCategory(): string
-    {
-        return $this->category;
-    }
-
-    public function setCategory(string $category): Equipment
-    {
-        $this->category = $category;
 
         return $this;
     }
@@ -110,9 +96,21 @@ class Equipment
         return $this->value;
     }
 
-    public function setValue(?int $value): Equipment
+    public function setValue(?int $value): static
     {
         $this->value = $value;
+
+        return $this;
+    }
+
+    public function getWeight(): int
+    {
+        return $this->weight;
+    }
+
+    public function setWeight(int $weight): static
+    {
+        $this->weight = $weight;
 
         return $this;
     }
@@ -122,7 +120,7 @@ class Equipment
         return $this->maxDurabilityPoints;
     }
 
-    public function setMaxDurabilityPoints(int $maxDurabilityPoints): Equipment
+    public function setMaxDurabilityPoints(int $maxDurabilityPoints): static
     {
         $this->maxDurabilityPoints = $maxDurabilityPoints;
 
@@ -134,7 +132,7 @@ class Equipment
         return $this->currentDurabilityPoints;
     }
 
-    public function setCurrentDurabilityPoints(int $currentDurabilityPoints): Equipment
+    public function setCurrentDurabilityPoints(int $currentDurabilityPoints): static
     {
         $this->currentDurabilityPoints = $currentDurabilityPoints;
 
@@ -146,7 +144,7 @@ class Equipment
         return $this->description;
     }
 
-    public function setDescription(string $description): Equipment
+    public function setDescription(string $description): static
     {
         $this->description = $description;
 
@@ -158,9 +156,21 @@ class Equipment
         return $this->isOwned;
     }
 
-    public function setIsOwned(bool $isOwned): Equipment
+    public function setIsOwned(bool $isOwned): static
     {
         $this->isOwned = $isOwned;
+
+        return $this;
+    }
+
+    public function isEquipped(): bool
+    {
+        return $this->isEquipped;
+    }
+
+    public function setIsEquipped(bool $isEquipped): static
+    {
+        $this->isEquipped = $isEquipped;
 
         return $this;
     }
@@ -170,7 +180,7 @@ class Equipment
         return $this->skills;
     }
 
-    public function addSkill(Skill $skill): Equipment
+    public function addSkill(Skill $skill): static
     {
         if (!$this->getSkills()->contains($skill)) {
             $this->skills->add($skill);
@@ -179,7 +189,7 @@ class Equipment
         return $this;
     }
 
-    public function removeSkill(Skill $skill): Equipment
+    public function removeSkill(Skill $skill): static
     {
         if ($this->getSkills()->contains($skill)) {
             $this->skills->removeElement($skill);
@@ -193,7 +203,7 @@ class Equipment
         return $this->spells;
     }
 
-    public function addSpell(Spell $spell): Equipment
+    public function addSpell(Spell $spell): static
     {
         if (!$this->getSpells()->contains($spell)) {
             $this->spells->add($spell);
@@ -202,7 +212,7 @@ class Equipment
         return $this;
     }
 
-    public function removeSpell(Spell $spell): Equipment
+    public function removeSpell(Spell $spell): static
     {
         if ($this->getSpells()->contains($spell)) {
             $this->spells->removeElement($spell);
@@ -216,52 +226,22 @@ class Equipment
         return $this->game;
     }
 
-    public function setGame(Game $game): Equipment
+    public function setGame(Game $game): static
     {
         $this->game = $game;
 
         return $this;
     }
 
-    public function getMonster(): ?Monster
+    public function getBeing(): ?Being
     {
-        return $this->monster;
+        return $this->being;
     }
 
-    public function setMonster(?Monster $monster): Equipment
+    public function setBeing(?Being $being): static
     {
-        $this->monster = $monster;
-        if ($this->monster) {
-            $this->setIsOwned(true);
-        }
-
-        return $this;
-    }
-
-    public function getCharacter(): ?Character
-    {
-        return $this->character;
-    }
-
-    public function setCharacter(?Character $character): Equipment
-    {
-        $this->character = $character;
-        if ($this->character) {
-            $this->setIsOwned(true);
-        }
-
-        return $this;
-    }
-
-    public function getNonPlayableCharacter(): ?NonPlayableCharacter
-    {
-        return $this->nonPlayableCharacter;
-    }
-
-    public function setNonPlayableCharacter(?NonPlayableCharacter $nonPlayableCharacter): Equipment
-    {
-        $this->nonPlayableCharacter = $nonPlayableCharacter;
-        if ($this->nonPlayableCharacter) {
+        $this->being = $being;
+        if ($this->being) {
             $this->setIsOwned(true);
         }
 
@@ -270,16 +250,6 @@ class Equipment
 
     public function getOwnerName(): ?string
     {
-        if ($this->getCharacter()) {
-            return $this->getCharacter()->getFullName();
-        }
-        if ($this->getMonster()) {
-            return $this->getMonster()->getName();
-        }
-        if ($this->getNonPlayableCharacter()) {
-            return $this->getNonPlayableCharacter()->getFullName();
-        }
-
-        return null;
+        return $this->being?->getFullName();
     }
 }

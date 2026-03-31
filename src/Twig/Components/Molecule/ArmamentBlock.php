@@ -25,7 +25,7 @@ class ArmamentBlock
     public string $query = '';
 
     public function __construct(
-        public EquipmentRepository         $armamentRepository,
+        public EquipmentRepository $armamentRepository,
         public EquipmentTemplateRepository $armamentTemplateRepository,
     ) {
     }

@@ -64,18 +64,6 @@ services:
       MP_SMTP_AUTH_ALLOW_INSECURE: 1
 ###< symfony/mailer ###
 
-####> doctrine/doctrine-bundle ###
-#  database:
-#    image: mysql:9.2.0
-#    environment:
-#      MYSQL_ROOT_PASSWORD: p@ssw0rd
-#    healthcheck:
-#      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-uroot", "-ppass"]
-#      timeout: 5s
-#      retries: 5
-#      start_period: 60s
-####< doctrine/doctrine-bundle ###
-
 ###> Networks
 networks:
   rpg-app-network:

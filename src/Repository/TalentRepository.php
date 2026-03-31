@@ -16,6 +16,11 @@ class TalentRepository extends ServiceEntityRepository
         parent::__construct($registry, Talent::class);
     }
 
+    public function findOneByName(string $name): ?Talent
+    {
+        return $this->findOneBy(['name' => $name]);
+    }
+
     /** @return Talent[] */
     public function getLastFiveTalents(): array
     {

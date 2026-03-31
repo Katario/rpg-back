@@ -16,6 +16,11 @@ class ItemRepository extends ServiceEntityRepository
         parent::__construct($registry, Item::class);
     }
 
+    public function findOneByName(string $name): ?Item
+    {
+        return $this->findOneBy(['name' => $name]);
+    }
+
     /** @return Item[] */
     public function getLastFiveItems(): array
     {

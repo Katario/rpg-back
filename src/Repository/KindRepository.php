@@ -18,6 +18,11 @@ class KindRepository extends ServiceEntityRepository
         parent::__construct($registry, Kind::class);
     }
 
+    public function findOneByName(string $name): ?Kind
+    {
+        return $this->findOneBy(['name' => $name]);
+    }
+
     public function delete(Kind $kind): void
     {
         $this->getEntityManager()->remove($kind);

@@ -16,8 +16,8 @@ abstract class Encyclopedia
     #[ORM\Column(type: 'boolean', options: ['default' => false])]
     protected bool $isPrivate;
     #[ORM\ManyToOne(targetEntity: User::class)]
-    #[JoinColumn(name: 'created_by', referencedColumnName: 'id')]
-    private User $createdBy;
+    #[JoinColumn(name: 'created_by', referencedColumnName: 'id', nullable: true)]
+    private ?User $createdBy = null;
 
     public function isReady(): bool
     {
@@ -43,12 +43,12 @@ abstract class Encyclopedia
         return $this;
     }
 
-    public function getCreatedBy(): User
+    public function getCreatedBy(): ?User
     {
         return $this->createdBy;
     }
 
-    public function setCreatedBy(User $createdBy): Encyclopedia
+    public function setCreatedBy(?User $createdBy): Encyclopedia
     {
         $this->createdBy = $createdBy;
 

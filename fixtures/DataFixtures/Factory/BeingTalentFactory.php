@@ -2,13 +2,13 @@
 
 namespace App\Fixtures\DataFixtures\Factory;
 
-use App\Entity\MonsterTalent;
+use App\Entity\BeingTalent;
 use Zenstruck\Foundry\Persistence\PersistentProxyObjectFactory;
 
 /**
- * @extends PersistentProxyObjectFactory<Talent>
+ * @extends PersistentProxyObjectFactory<BeingTalent>
  */
-final class MonsterTalentFactory extends PersistentProxyObjectFactory
+final class BeingTalentFactory extends PersistentProxyObjectFactory
 {
     /**
      * @see https://symfony.com/bundles/ZenstruckFoundryBundle/current/index.html#factories-as-services
@@ -21,7 +21,7 @@ final class MonsterTalentFactory extends PersistentProxyObjectFactory
 
     public static function class(): string
     {
-        return MonsterTalent::class;
+        return BeingTalent::class;
     }
 
     /**

@@ -14,7 +14,7 @@ class TalentLevel
     #[ORM\Column(type: 'integer')]
     private ?int $id = null;
 
-    #[ORM\Column(type: 'int')]
+    #[ORM\Column(type: 'integer')]
     private int $level;
 
     #[ORM\Column(type: 'text')]

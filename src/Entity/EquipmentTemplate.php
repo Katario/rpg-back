@@ -56,7 +56,6 @@ class EquipmentTemplate extends Encyclopedia
     #[ORM\ManyToMany(targetEntity: Spell::class)]
     private Collection|array $spells;
 
-
     public function __construct()
     {
         $this->skills = new ArrayCollection();

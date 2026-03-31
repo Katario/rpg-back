@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\SkillRepository;
+use App\ValueObject\Damage;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: SkillRepository::class)]
@@ -23,9 +24,11 @@ class Skill extends Encyclopedia
     private int $exhaustPointCost;
     #[ORM\Column(type: 'integer')]
     private int $actionPointCost;
-    // @TODO: replace by an array of Dice ValueObject, move damages in a Damage Model
-    #[ORM\Column(type: 'string')]
-    private string $diceValue;
+    #[ORM\Column(type: 'json', options: ['default' => '[]'])]
+    private array $damageDice = [];
+
+    #[ORM\Column(type: 'integer', options: ['default' => 0])]
+    private int $damageBonus = 0;
 
     public function getId(): ?int
     {
@@ -80,14 +83,15 @@ class Skill extends Encyclopedia
         return $this;
     }
 
-    public function getDiceValue(): string
+    public function getDamage(): Damage
     {
-        return $this->diceValue;
+        return new Damage($this->damageDice, $this->damageBonus);
     }
 
-    public function setDiceValue(string $diceValue): Skill
+    public function setDamage(Damage $damage): Skill
     {
-        $this->diceValue = $diceValue;
+        $this->damageDice = $damage->getDice();
+        $this->damageBonus = $damage->getBonus();
 
         return $this;
     }

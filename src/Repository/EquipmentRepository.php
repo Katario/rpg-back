@@ -23,7 +23,6 @@ class EquipmentRepository extends ServiceEntityRepository
     {
         $queryBuilder = $this->createQueryBuilder('a');
         $queryBuilder->where('a.name LIKE :query')
-            ->orWhere('a.category LIKE :query')
             ->andWhere('a.game = :gameId')
             ->setParameter('query', '%'.$query.'%')
             ->setParameter('gameId', $gameId)
@@ -42,6 +41,9 @@ class EquipmentRepository extends ServiceEntityRepository
     public function availableArmamentsQueryBuilder(int $gameId, BeingEnum $owner, ?int $ownerId = null): QueryBuilder
     {
         $qb = $this->createQueryBuilder('a');
+        $qb->leftJoin('a.being', 'b');
+
+        $ownerClass = BeingEnum::toDiscriminatorMapping()[$owner->value];
 
         $qb
             ->where($qb->expr()->andX(
@@ -50,8 +52,9 @@ class EquipmentRepository extends ServiceEntityRepository
                     $qb->expr()->eq('a.isOwned', 'false'),
                     $qb->expr()->andX(
                         $qb->expr()->eq('a.isOwned', 'true'),
+                        "b INSTANCE OF {$ownerClass}",
                         $ownerId
-                            ? $qb->expr()->eq('a.'.$owner, ':ownerId')
+                            ? $qb->expr()->eq('a.being', ':ownerId')
                             : '1 = 1',
                     )
                 )

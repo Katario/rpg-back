@@ -4,30 +4,32 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Repository\CharacterTalentRepository;
+use App\Repository\BeingTalentRepository;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Table(name: 'playable_character_talent')]
-#[ORM\Entity(repositoryClass: CharacterTalentRepository::class)]
-class CharacterTalent
+#[ORM\Table(name: 'being_talent')]
+#[ORM\Entity(repositoryClass: BeingTalentRepository::class)]
+class BeingTalent
 {
     #[ORM\Id]
-    #[ORM\ManyToOne(targetEntity: Character::class, inversedBy: 'talents')]
-    private Character $character;
+    #[ORM\ManyToOne(targetEntity: Being::class, inversedBy: 'talents')]
+    private Being $being;
+
     #[ORM\Id]
     #[ORM\ManyToOne(targetEntity: Talent::class)]
     private Talent $talent;
+
     #[ORM\Column(type: 'integer')]
     private int $value;
 
-    public function getCharacter(): Character
+    public function getBeing(): Being
     {
-        return $this->character;
+        return $this->being;
     }
 
-    public function setCharacter(Character $character): CharacterTalent
+    public function setBeing(Being $being): BeingTalent
     {
-        $this->character = $character;
+        $this->being = $being;
 
         return $this;
     }
@@ -37,7 +39,7 @@ class CharacterTalent
         return $this->talent;
     }
 
-    public function setTalent(Talent $talent): CharacterTalent
+    public function setTalent(Talent $talent): BeingTalent
     {
         $this->talent = $talent;
 
@@ -49,7 +51,7 @@ class CharacterTalent
         return $this->value;
     }
 
-    public function setValue(int $value): CharacterTalent
+    public function setValue(int $value): BeingTalent
     {
         $this->value = $value;
 

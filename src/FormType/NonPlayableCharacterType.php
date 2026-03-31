@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\FormType;
 
-use App\Entity\Equipment;
 use App\Entity\CharacterClass;
+use App\Entity\Equipment;
 use App\Entity\Item;
 use App\Entity\Kind;
 use App\Entity\NonPlayableCharacter;

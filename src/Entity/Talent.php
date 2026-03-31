@@ -36,7 +36,6 @@ class Talent extends Encyclopedia
         return $this->id;
     }
 
-
     public function setId(?int $id): Talent
     {
         $this->id = $id;

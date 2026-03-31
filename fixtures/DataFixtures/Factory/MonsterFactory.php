@@ -10,11 +10,6 @@ use Zenstruck\Foundry\Persistence\PersistentProxyObjectFactory;
  */
 final class MonsterFactory extends PersistentProxyObjectFactory
 {
-    /**
-     * @see https://symfony.com/bundles/ZenstruckFoundryBundle/current/index.html#factories-as-services
-     *
-     * @todo inject services if required
-     */
     public function __construct()
     {
     }
@@ -25,36 +20,30 @@ final class MonsterFactory extends PersistentProxyObjectFactory
     }
 
     /**
-     * @see https://symfony.com/bundles/ZenstruckFoundryBundle/current/index.html#model-factories
-     *
-     * @return array<bool|\DateTimeImmutable|int|string>
+     * @return array<bool|int|string>
      */
     protected function defaults(): array
     {
         return [
-            'createdAt' => \DateTimeImmutable::createFromMutable(self::faker()->dateTime()),
-            'currentHealthPoints' => self::faker()->numberBetween(50, 250),
-            'currentManaPoints' => self::faker()->numberBetween(50, 250),
-            'currentExhaustPoints' => self::faker()->numberBetween(50, 250),
-            'currentActionPoints' => self::faker()->numberBetween(50, 250),
-            'maxHealthPoints' => self::faker()->numberBetween(255, 500),
-            'maxManaPoints' => self::faker()->numberBetween(255, 500),
-            'maxExhaustPoints' => self::faker()->numberBetween(255, 500),
-            'maxActionPoints' => self::faker()->numberBetween(255, 500),
-            'name' => self::faker()->text(),
+            'name' => self::faker()->text(50),
             'level' => 1,
-            'isBoss' => self::faker()->boolean(),
-            'updatedAt' => \DateTimeImmutable::createFromMutable(self::faker()->dateTime()),
+            'isBoss' => false,
+            'currentHealthPoints' => self::faker()->numberBetween(50, 250),
+            'maxHealthPoints' => self::faker()->numberBetween(255, 500),
+            'currentManaPoints' => self::faker()->numberBetween(50, 250),
+            'maxManaPoints' => self::faker()->numberBetween(255, 500),
+            'currentActionPoints' => self::faker()->numberBetween(50, 250),
+            'maxActionPoints' => self::faker()->numberBetween(255, 500),
+            'currentExhaustPoints' => self::faker()->numberBetween(50, 250),
+            'maxExhaustPoints' => self::faker()->numberBetween(255, 500),
+            'maxLoadPoints' => self::faker()->numberBetween(10, 20),
+            'currentMentalPoints' => self::faker()->numberBetween(50, 250),
+            'maxMentalPoints' => self::faker()->numberBetween(255, 500),
         ];
     }
 
-    /**
-     * @see https://symfony.com/bundles/ZenstruckFoundryBundle/current/index.html#initialization
-     */
     protected function initialize(): static
     {
-        return $this
-            // ->afterInstantiate(function(Monster $monster): void {})
-        ;
+        return $this;
     }
 }
