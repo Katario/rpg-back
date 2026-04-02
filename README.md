@@ -143,3 +143,4 @@ TODO:
 1. When a playable character is created, you can generate a link + a hash to store in that character row.
 2. When a player access the route, it sends the hash, that is used to retrieve the Character.
 3. Retrieve the Character = Sending all the data from it.
+
