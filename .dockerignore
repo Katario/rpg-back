@@ -1,0 +1,17 @@
+vendor
+var/cache
+var/log
+var/tailwind
+docker/db/data
+.env.local
+.env.*.local
+.git
+.gitignore
+*.md
+phpunit-reports
+phpstan-baseline.neon
+phpstan.dist.neon
+phpstan.neon
+phpunit.xml.dist
+tests
+fixtures

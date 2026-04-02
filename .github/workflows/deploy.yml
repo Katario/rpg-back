@@ -1,0 +1,141 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+# Ne pas déployer en parallèle si deux commits arrivent rapidement
+concurrency:
+  group: deploy-back
+  cancel-in-progress: false
+
+jobs:
+
+  # ── Tests ─────────────────────────────────────────────────────────────────
+  # Les workflows tests.yaml / quality.yaml tournent sur toutes les branches.
+  # On les relance ici pour garantir qu'un merge sur main ne déploie rien de cassé.
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: app_test
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: pgsql, pdo_pgsql, gd, intl, bcmath, zip, exif, pcntl
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress --optimize-autoloader
+
+      - name: Prepare test database
+        env:
+          DATABASE_URL: postgresql://app:password@127.0.0.1:${{ job.services.postgres.ports['5432'] }}/app_test?serverVersion=16&charset=utf8
+          APP_ENV: test
+          APP_SECRET: testsecret
+        run: |
+          php bin/console doctrine:database:create --if-not-exists
+          php bin/console doctrine:migrations:migrate --no-interaction
+
+      - name: PHPUnit
+        env:
+          DATABASE_URL: postgresql://app:password@127.0.0.1:${{ job.services.postgres.ports['5432'] }}/app_test?serverVersion=16&charset=utf8
+          APP_ENV: test
+          APP_SECRET: testsecret
+          SYMFONY_DEPRECATIONS_HELPER: 999999
+        run: vendor/bin/phpunit --testdox
+
+  # ── Build & push images ───────────────────────────────────────────────────
+  build:
+    name: Build & push images
+    runs-on: ubuntu-latest
+    needs: test
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & push rpg-back-php
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.prod
+          target: php-production
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/rpg-back-php:latest
+            ghcr.io/${{ github.repository_owner }}/rpg-back-php:${{ github.sha }}
+          cache-from: type=gha,scope=back-php
+          cache-to: type=gha,mode=max,scope=back-php
+
+      - name: Build & push rpg-back-nginx
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.prod
+          target: nginx-production
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/rpg-back-nginx:latest
+            ghcr.io/${{ github.repository_owner }}/rpg-back-nginx:${{ github.sha }}
+          # Partage le cache du builder avec le job php (même Dockerfile, même stages amont)
+          cache-from: type=gha,scope=back-php
+          cache-to: type=gha,mode=max,scope=back-nginx
+
+  # ── Déploiement VPS ───────────────────────────────────────────────────────
+  deploy:
+    name: Déploiement VPS
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ${{ secrets.VPS_DEPLOY_PATH }}
+            docker compose -f compose.prod.yml pull back-php back-nginx
+            docker compose -f compose.prod.yml up -d --no-deps back-php back-nginx
+            docker image prune -f
