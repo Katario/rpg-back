@@ -62,7 +62,10 @@ RUN chmod +x /usr/local/bin/entrypoint.prod.sh
 
 RUN addgroup --gid 1000 user \
     && adduser --disabled-password --gecos '' --uid 1000 --gid 1000 user \
-    && usermod -aG www-data user
+    && usermod -aG www-data user \
+    && mkdir -p var/cache var/log \
+    && chown -R user:www-data var/ \
+    && chmod -R 775 var/
 
 USER user
 
