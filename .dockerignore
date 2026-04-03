@@ -14,4 +14,3 @@ phpstan.dist.neon
 phpstan.neon
 phpunit.xml.dist
 tests
-fixtures
