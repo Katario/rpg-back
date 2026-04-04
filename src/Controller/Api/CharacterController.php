@@ -11,6 +11,7 @@ use App\Entity\Character;
 use App\Entity\Item;
 use App\Entity\Kind;
 use App\Entity\KindTalentBonus;
+use App\Entity\Skill;
 use App\Entity\Spell;
 use App\Entity\Talent;
 use App\Entity\Weapon;
@@ -20,6 +21,7 @@ use App\Repository\CharacterRepository;
 use App\Repository\GameRepository;
 use App\Repository\ItemRepository;
 use App\Repository\KindRepository;
+use App\Repository\SkillRepository;
 use App\Repository\SpellRepository;
 use App\Repository\TalentRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -47,6 +49,7 @@ class CharacterController extends AbstractController
         TalentRepository $talentRepository,
         SpellRepository $spellRepository,
         ItemRepository $itemRepository,
+        SkillRepository $skillRepository,
     ): JsonResponse {
         $body = json_decode($request->getContent(), true);
 
@@ -176,16 +179,30 @@ class CharacterController extends AbstractController
                     ->setMaxDurabilityPoints($equipData['hp']['max'] ?? 0)
                     ->setDescription($equipData['description'] ?? '')
                     ->setValue(0)
+                    ->setWeight($equipData['weight'] ?? 0)
                     ->setIsEquipped($equipData['equipped'] ?? false)
                     ->setGame($game)
                     ->setBeing($character);
 
                 if ($equipment instanceof Weapon && !empty($equipData['attacks'])) {
                     $firstAttack = $equipData['attacks'][0];
-                    $equipment->setDamage(new Damage(
-                        isset($firstAttack['dice']) ? $firstAttack['dice'] : [],
-                        (int) ($firstAttack['bonus'] ?? 0),
-                    ));
+                    $equipment->setDamage($this->parseDamageString($firstAttack['damage'] ?? ''));
+
+                    foreach ($equipData['attacks'] as $attackData) {
+                        $skill = $skillRepository->findOneByName($attackData['name']);
+                        if (!$skill) {
+                            $skill = new Skill()
+                                ->setName($attackData['name'])
+                                ->setDescription('')
+                                ->setExhaustPointCost((int) ($attackData['faCost'] ?? 0))
+                                ->setActionPointCost((int) ($attackData['paCost'] ?? 0))
+                                ->setDamage($this->parseDamageString($attackData['damage'] ?? ''))
+                                ->setIsReady(true)
+                                ->setIsPrivate(false);
+                            $em->persist($skill);
+                        }
+                        $equipment->addSkill($skill);
+                    }
                 }
 
                 $em->persist($equipment);
@@ -217,7 +234,7 @@ class CharacterController extends AbstractController
                     ->setDescription($spellData['effect'] ?? '')
                     ->setManaCost($spellData['maCost'] ?? 0)
                     ->setActionPointCost($spellData['paCost'] ?? 0)
-                    ->setDiceValue($spellData['damage'] ?? '')
+                    ->setDamage($this->parseDamageString($spellData['damage'] ?? ''))
                     ->setIsReady(true)
                     ->setIsPrivate(false);
                 $em->persist($spell);
@@ -469,6 +486,22 @@ class CharacterController extends AbstractController
         $characterRepository->delete($character);
 
         return $this->json(null, Response::HTTP_NO_CONTENT);
+    }
+
+    private function parseDamageString(string $damage): Damage
+    {
+        $dice = [];
+        preg_match_all('/(\d+)d(\d+)/i', $damage, $diceMatches, PREG_SET_ORDER);
+        foreach ($diceMatches as $match) {
+            $dice[] = ['count' => (int) $match[1], 'faces' => (int) $match[2]];
+        }
+
+        $bonus = 0;
+        if (preg_match('/\+\s*(\d+)\s*$/', $damage, $bonusMatch)) {
+            $bonus = (int) $bonusMatch[1];
+        }
+
+        return new Damage($dice, $bonus);
     }
 
     #[Route('/characters/{token}/avatar', name: 'api_character_avatar_upload', methods: ['POST'])]
