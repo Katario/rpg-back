@@ -53,11 +53,11 @@ class CharacterController extends AbstractController
     ): JsonResponse {
         $body = json_decode($request->getContent(), true);
 
-        if (!isset($body['gameId'], $body['data']) || !is_array($body['data'])) {
-            return $this->json(['error' => 'Missing or invalid gameId or data'], Response::HTTP_BAD_REQUEST);
+        if (!isset($body['data']) || !is_array($body['data'])) {
+            return $this->json(['error' => 'Missing or invalid data'], Response::HTTP_BAD_REQUEST);
         }
 
-        $game = $gameRepository->find($body['gameId']);
+        $game = $gameRepository->find($body['gameId'] ?? 1);
         if (!$game) {
             return $this->json(['error' => 'Game not found'], Response::HTTP_NOT_FOUND);
         }
@@ -319,10 +319,23 @@ class CharacterController extends AbstractController
         $skills = array_map($serializeSkill, $character->getSkills()->toArray());
 
         $talents = array_map(
-            fn ($characterTalent) => [
-                'name' => $characterTalent->getName(),
-                'value' => $characterTalent->getValue(),
-            ],
+            function ($characterTalent) {
+                $value = $characterTalent->getValue();
+                $unlockedLevels = array_values(array_filter(
+                    $characterTalent->getTalent()->getTalentLevels()->toArray(),
+                    fn ($tl) => $tl->getRequiredPoints() <= $value,
+                ));
+
+                return [
+                    'name'         => $characterTalent->getName(),
+                    'value'        => $value,
+                    'talentLevels' => array_map(fn ($tl) => [
+                        'tier'           => $tl->getTier()->value,
+                        'requiredPoints' => $tl->getRequiredPoints(),
+                        'description'    => $tl->getDescription(),
+                    ], $unlockedLevels),
+                ];
+            },
             $character->getTalents()->toArray(),
         );
 

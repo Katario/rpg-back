@@ -10,6 +10,7 @@ use App\Repository\CharacterRepository;
 use App\Repository\SkillRepository;
 use App\Repository\WeaponRepository;
 use App\ValueObject\Damage;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -25,6 +26,8 @@ class WeaponController extends AbstractController
         Request $request,
         CharacterRepository $characterRepository,
         WeaponRepository $weaponRepository,
+        SkillRepository $skillRepository,
+        EntityManagerInterface $em,
     ): JsonResponse {
         $character = $characterRepository->findOneByToken($token);
 
@@ -53,9 +56,48 @@ class WeaponController extends AbstractController
             $weapon->setDamage(new Damage($body['damage']['dice'] ?? [], $body['damage']['bonus'] ?? 0));
         }
 
+        foreach ($body['skills'] ?? [] as $skillData) {
+            if (empty($skillData['name'])) {
+                continue;
+            }
+            $skill = $skillRepository->findOneByName($skillData['name']);
+            if (!$skill) {
+                $skill = (new Skill())
+                    ->setName($skillData['name'])
+                    ->setDescription('')
+                    ->setExhaustPointCost((int) ($skillData['exhaustPointCost'] ?? 0))
+                    ->setActionPointCost((int) ($skillData['actionPointCost'] ?? 0))
+                    ->setDamage(new Damage($skillData['damage']['dice'] ?? [], (int) ($skillData['damage']['bonus'] ?? 0)))
+                    ->setIsReady(true)
+                    ->setIsPrivate(false);
+                $em->persist($skill);
+            }
+            $weapon->addSkill($skill);
+        }
+
         $weaponRepository->save($weapon);
 
-        return $this->json(['id' => $weapon->getId()], Response::HTTP_CREATED);
+        $damage = $weapon->getDamage();
+
+        return $this->json([
+            'id'                      => $weapon->getId(),
+            'name'                    => $weapon->getName(),
+            'value'                   => $weapon->getValue(),
+            'weight'                  => $weapon->getWeight(),
+            'currentDurabilityPoints' => $weapon->getCurrentDurabilityPoints(),
+            'maxDurabilityPoints'     => $weapon->getMaxDurabilityPoints(),
+            'description'             => $weapon->getDescription(),
+            'isEquipped'              => $weapon->isEquipped(),
+            'damage'                  => ['dice' => $damage->getDice(), 'bonus' => $damage->getBonus()],
+            'skills'                  => array_map(fn ($skill) => [
+                'id'               => $skill->getId(),
+                'name'             => $skill->getName(),
+                'description'      => $skill->getDescription(),
+                'exhaustPointCost' => $skill->getExhaustPointCost(),
+                'actionPointCost'  => $skill->getActionPointCost(),
+                'damage'           => ['dice' => $skill->getDamage()->getDice(), 'bonus' => $skill->getDamage()->getBonus()],
+            ], $weapon->getSkills()->toArray()),
+        ], Response::HTTP_CREATED);
     }
 
     #[Route('/characters/{token}/weapons/{id}', name: 'api_character_weapon_update', methods: ['PATCH'])]

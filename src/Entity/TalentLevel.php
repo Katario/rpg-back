@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use App\Enum\TierEnum;
 use App\Repository\TalentLevelRepository;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -14,8 +15,11 @@ class TalentLevel
     #[ORM\Column(type: 'integer')]
     private ?int $id = null;
 
+    #[ORM\Column(enumType: TierEnum::class)]
+    private TierEnum $tier;
+
     #[ORM\Column(type: 'integer')]
-    private int $level;
+    private int $requiredPoints;
 
     #[ORM\Column(type: 'text')]
     private string $description;
@@ -31,14 +35,26 @@ class TalentLevel
         return $this->id;
     }
 
-    public function getLevel(): int
+    public function getTier(): TierEnum
     {
-        return $this->level;
+        return $this->tier;
     }
 
-    public function setLevel(int $level): self
+    public function setTier(TierEnum $tier): self
     {
-        $this->level = $level;
+        $this->tier = $tier;
+
+        return $this;
+    }
+
+    public function getRequiredPoints(): int
+    {
+        return $this->requiredPoints;
+    }
+
+    public function setRequiredPoints(int $requiredPoints): self
+    {
+        $this->requiredPoints = $requiredPoints;
 
         return $this;
     }
