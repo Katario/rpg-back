@@ -118,12 +118,12 @@ class Character extends Being
     }
 
     private const array LEVELUP_ALLOWED_STATS = [
-        'maxHealthPoints'  => ['getter' => 'getMaxHealthPoints',  'setter' => 'setMaxHealthPoints'],
-        'maxManaPoints'    => ['getter' => 'getMaxManaPoints',    'setter' => 'setMaxManaPoints'],
-        'maxActionPoints'  => ['getter' => 'getMaxActionPoints',  'setter' => 'setMaxActionPoints'],
-        'maxExhaustPoints' => ['getter' => 'getMaxExhaustPoints', 'setter' => 'setMaxExhaustPoints'],
-        'maxMentalPoints'  => ['getter' => 'getMaxMentalPoints',  'setter' => 'setMaxMentalPoints'],
-        'maxLoadPoints'    => ['getter' => 'getMaxLoadPoints',    'setter' => 'setMaxLoadPoints'],
+        'maxHealthPoints'  => ['getter' => 'getMaxHealthPoints',  'setter' => 'setMaxHealthPoints',  'unit' => 1],
+        'maxManaPoints'    => ['getter' => 'getMaxManaPoints',    'setter' => 'setMaxManaPoints',    'unit' => 1],
+        'maxActionPoints'  => ['getter' => 'getMaxActionPoints',  'setter' => 'setMaxActionPoints',  'unit' => 10],
+        'maxExhaustPoints' => ['getter' => 'getMaxExhaustPoints', 'setter' => 'setMaxExhaustPoints', 'unit' => 10],
+        'maxMentalPoints'  => ['getter' => 'getMaxMentalPoints',  'setter' => 'setMaxMentalPoints',  'unit' => 10],
+        'maxLoadPoints'    => ['getter' => 'getMaxLoadPoints',    'setter' => 'setMaxLoadPoints',    'unit' => 10],
     ];
 
     /**
@@ -137,8 +137,17 @@ class Character extends Being
             throw new \InvalidArgumentException(sprintf('Invalid stats: %s', implode(', ', $invalidKeys)));
         }
 
-        if (array_sum($statIncrements) !== 2) {
-            throw new \InvalidArgumentException(sprintf('Stats must sum to 2, got %d', array_sum($statIncrements)));
+        $pointsSpent = 0;
+        foreach ($statIncrements as $stat => $increment) {
+            $unit = self::LEVELUP_ALLOWED_STATS[$stat]['unit'];
+            if ($increment % $unit !== 0) {
+                throw new \InvalidArgumentException(sprintf('Increment for "%s" must be a multiple of %d, got %d', $stat, $unit, $increment));
+            }
+            $pointsSpent += $increment / $unit;
+        }
+
+        if ($pointsSpent !== 2) {
+            throw new \InvalidArgumentException(sprintf('Stats must total 2 points, got %d', $pointsSpent));
         }
 
         if (count($talentNames) !== 5) {
