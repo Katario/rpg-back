@@ -111,7 +111,7 @@ class CharacterController extends AbstractController
             ->setMaxActionPoints($stats['pa']['max'])
             ->setCurrentExhaustPoints($stats['fa']['current'])
             ->setMaxExhaustPoints($stats['fa']['max'])
-            ->setMaxLoadPoints($stats['ch']['max'])
+            ->setMaxLoadPoints($stats['ch']['max'] * 1000)
             ->setCurrentMentalPoints($stats['sm']['current'])
             ->setMaxMentalPoints($stats['sm']['max'])
         ;
@@ -179,7 +179,7 @@ class CharacterController extends AbstractController
                     ->setMaxDurabilityPoints($equipData['hp']['max'] ?? 0)
                     ->setDescription($equipData['description'] ?? '')
                     ->setValue(0)
-                    ->setWeight($equipData['weight'] ?? 0)
+                    ->setWeight(($equipData['weight'] ?? 0) * 1000)
                     ->setIsEquipped($equipData['equipped'] ?? false)
                     ->setGame($game)
                     ->setBeing($character);
@@ -213,7 +213,7 @@ class CharacterController extends AbstractController
                         ->setName($equipData['name'])
                         ->setDescription($equipData['description'] ?? '')
                         ->setValue(0)
-                        ->setWeight($equipData['weight'] ?? 0)
+                        ->setWeight(($equipData['weight'] ?? 0) * 1000)
                         ->setIsReady(true)
                         ->setIsPrivate(false);
                     $em->persist($item);
