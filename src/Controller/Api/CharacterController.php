@@ -15,7 +15,7 @@ use App\Entity\Skill;
 use App\Entity\Spell;
 use App\Entity\Talent;
 use App\Entity\Weapon;
-use App\ValueObject\Damage;
+use App\ValueObject\DamageLine;
 use App\Calculator\LoadCalculator;
 use App\Repository\CharacterRepository;
 use App\Repository\GameRepository;
@@ -167,6 +167,8 @@ class CharacterController extends AbstractController
             $em->persist($beingTalent);
         }
 
+        $beingItemsByName = [];
+
         foreach ($data['equipment'] ?? [] as $equipData) {
             $hasAttacks = !empty($equipData['attacks']);
             $isArmor = !$hasAttacks && ($equipData['type'] === 'armor' || ($equipData['hp']['max'] ?? 0) > 0);
@@ -186,7 +188,7 @@ class CharacterController extends AbstractController
 
                 if ($equipment instanceof Weapon && !empty($equipData['attacks'])) {
                     $firstAttack = $equipData['attacks'][0];
-                    $equipment->setDamage($this->parseDamageString($firstAttack['damage'] ?? ''));
+                    $equipment->setDamageLines([$this->parseDamageString($firstAttack['damage'] ?? '')]);
 
                     foreach ($equipData['attacks'] as $attackData) {
                         $skill = $skillRepository->findOneByName($attackData['name']);
@@ -196,7 +198,7 @@ class CharacterController extends AbstractController
                                 ->setDescription('')
                                 ->setExhaustPointCost((int) ($attackData['faCost'] ?? 0))
                                 ->setActionPointCost((int) ($attackData['paCost'] ?? 0))
-                                ->setDamage($this->parseDamageString($attackData['damage'] ?? ''))
+                                ->setDamageLines([$this->parseDamageString($attackData['damage'] ?? '')])
                                 ->setIsReady(true)
                                 ->setIsPrivate(false);
                             $em->persist($skill);
@@ -218,11 +220,17 @@ class CharacterController extends AbstractController
                         ->setIsPrivate(false);
                     $em->persist($item);
                 }
-                $beingItem = new BeingItem()
-                    ->setBeing($character)
-                    ->setItem($item)
-                    ->setQuantity(1);
-                $em->persist($beingItem);
+                $itemName = $item->getName();
+                if (isset($beingItemsByName[$itemName])) {
+                    $beingItemsByName[$itemName]->setQuantity($beingItemsByName[$itemName]->getQuantity() + 1);
+                } else {
+                    $beingItem = new BeingItem()
+                        ->setBeing($character)
+                        ->setItem($item)
+                        ->setQuantity(1);
+                    $em->persist($beingItem);
+                    $beingItemsByName[$itemName] = $beingItem;
+                }
             }
         }
 
@@ -234,7 +242,7 @@ class CharacterController extends AbstractController
                     ->setDescription($spellData['effect'] ?? '')
                     ->setManaCost($spellData['maCost'] ?? 0)
                     ->setActionPointCost($spellData['paCost'] ?? 0)
-                    ->setDamage($this->parseDamageString($spellData['damage'] ?? ''))
+                    ->setDamageLines([$this->parseDamageString($spellData['damage'] ?? '')])
                     ->setIsReady(true)
                     ->setIsPrivate(false);
                 $em->persist($spell);
@@ -259,13 +267,18 @@ class CharacterController extends AbstractController
         $kind = $character->getKind();
         $characterClass = $character->getCharacterClass();
 
+        $serializeDamageLines = fn ($entity) => array_map(
+            fn (DamageLine $line) => $line->toArray(),
+            $entity->getDamageLines(),
+        );
+
         $serializeSkill = fn ($skill) => [
             'id'               => $skill->getId(),
             'name'             => $skill->getName(),
             'description'      => $skill->getDescription(),
             'exhaustPointCost' => $skill->getExhaustPointCost(),
             'actionPointCost'  => $skill->getActionPointCost(),
-            'damage'           => ['dice' => $skill->getDamage()->getDice(), 'bonus' => $skill->getDamage()->getBonus()],
+            'damageLines'      => $serializeDamageLines($skill),
         ];
 
         $serializeEquipment = fn ($equipment) => [
@@ -277,18 +290,16 @@ class CharacterController extends AbstractController
             'maxDurabilityPoints'     => $equipment->getMaxDurabilityPoints(),
             'description'             => $equipment->getDescription(),
             'isEquipped'              => $equipment->isEquipped(),
+            'damageLines'             => $serializeDamageLines($equipment),
             'skills'                  => array_map($serializeSkill, $equipment->getSkills()->toArray()),
         ];
 
         $allEquipments = $character->getEquipments()->toArray();
 
-        $weapons = array_map(function (Weapon $weapon) use ($serializeEquipment) {
-            $damage = $weapon->getDamage();
-
-            return array_merge($serializeEquipment($weapon), [
-                'damage' => ['dice' => $damage->getDice(), 'bonus' => $damage->getBonus()],
-            ]);
-        }, array_values(array_filter($allEquipments, fn ($e) => $e instanceof Weapon)));
+        $weapons = array_map(
+            $serializeEquipment,
+            array_values(array_filter($allEquipments, fn ($e) => $e instanceof Weapon)),
+        );
 
         $armors = array_map(
             $serializeEquipment,
@@ -296,23 +307,19 @@ class CharacterController extends AbstractController
         );
 
         $spells = array_map(
-            function ($spell) {
-                $damage = $spell->getDamage();
-
-                return [
-                    'id'              => $spell->getId(),
-                    'name'            => $spell->getName(),
-                    'description'     => $spell->getDescription(),
-                    'school'          => $spell->getSchool(),
-                    'manaCost'        => $spell->getManaCost(),
-                    'actionPointCost' => $spell->getActionPointCost(),
-                    'damage'          => ['dice' => $damage->getDice(), 'bonus' => $damage->getBonus()],
-                    'range'           => $spell->getRange(),
-                    'impactZone'      => $spell->getImpactZone(),
-                    'duration'        => $spell->getDuration(),
-                    'type'            => $spell->getType(),
-                ];
-            },
+            fn ($spell) => [
+                'id'              => $spell->getId(),
+                'name'            => $spell->getName(),
+                'description'     => $spell->getDescription(),
+                'school'          => $spell->getSchool(),
+                'manaCost'        => $spell->getManaCost(),
+                'actionPointCost' => $spell->getActionPointCost(),
+                'damageLines'     => $serializeDamageLines($spell),
+                'range'           => $spell->getRange(),
+                'impactZone'      => $spell->getImpactZone(),
+                'duration'        => $spell->getDuration(),
+                'type'            => $spell->getType(),
+            ],
             $character->getSpells()->toArray(),
         );
 
@@ -501,20 +508,21 @@ class CharacterController extends AbstractController
         return $this->json(null, Response::HTTP_NO_CONTENT);
     }
 
-    private function parseDamageString(string $damage): Damage
+    private function parseDamageString(string $damage): DamageLine
     {
-        $dice = [];
-        preg_match_all('/(\d+)d(\d+)/i', $damage, $diceMatches, PREG_SET_ORDER);
-        foreach ($diceMatches as $match) {
-            $dice[] = ['count' => (int) $match[1], 'faces' => (int) $match[2]];
+        $diceCount = 0;
+        $diceFaces = 0;
+        if (preg_match('/(\d+)d(\d+)/i', $damage, $match)) {
+            $diceCount = (int) $match[1];
+            $diceFaces = (int) $match[2];
         }
 
-        $bonus = 0;
+        $fixedAmount = 0;
         if (preg_match('/\+\s*(\d+)\s*$/', $damage, $bonusMatch)) {
-            $bonus = (int) $bonusMatch[1];
+            $fixedAmount = (int) $bonusMatch[1];
         }
 
-        return new Damage($dice, $bonus);
+        return new DamageLine($diceCount, $diceFaces, $fixedAmount);
     }
 
     #[Route('/characters/{token}/avatar', name: 'api_character_avatar_upload', methods: ['POST'])]

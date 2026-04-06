@@ -9,7 +9,7 @@ use App\Entity\Weapon;
 use App\Repository\CharacterRepository;
 use App\Repository\SkillRepository;
 use App\Repository\WeaponRepository;
-use App\ValueObject\Damage;
+use App\ValueObject\DamageLine;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -52,8 +52,11 @@ class WeaponController extends AbstractController
             ->setGame($character->getGame())
             ->setBeing($character);
 
-        if (isset($body['damage'])) {
-            $weapon->setDamage(new Damage($body['damage']['dice'] ?? [], $body['damage']['bonus'] ?? 0));
+        if (isset($body['damageLines'])) {
+            $weapon->setDamageLines(array_map(
+                fn (array $line) => DamageLine::fromArray($line),
+                $body['damageLines'],
+            ));
         }
 
         foreach ($body['skills'] ?? [] as $skillData) {
@@ -67,7 +70,10 @@ class WeaponController extends AbstractController
                     ->setDescription('')
                     ->setExhaustPointCost((int) ($skillData['exhaustPointCost'] ?? 0))
                     ->setActionPointCost((int) ($skillData['actionPointCost'] ?? 0))
-                    ->setDamage(new Damage($skillData['damage']['dice'] ?? [], (int) ($skillData['damage']['bonus'] ?? 0)))
+                    ->setDamageLines(array_map(
+                        fn (array $line) => DamageLine::fromArray($line),
+                        $skillData['damageLines'] ?? [],
+                    ))
                     ->setIsReady(true)
                     ->setIsPrivate(false);
                 $em->persist($skill);
@@ -76,8 +82,6 @@ class WeaponController extends AbstractController
         }
 
         $weaponRepository->save($weapon);
-
-        $damage = $weapon->getDamage();
 
         return $this->json([
             'id'                      => $weapon->getId(),
@@ -88,14 +92,14 @@ class WeaponController extends AbstractController
             'maxDurabilityPoints'     => $weapon->getMaxDurabilityPoints(),
             'description'             => $weapon->getDescription(),
             'isEquipped'              => $weapon->isEquipped(),
-            'damage'                  => ['dice' => $damage->getDice(), 'bonus' => $damage->getBonus()],
+            'damageLines'             => array_map(fn (DamageLine $l) => $l->toArray(), $weapon->getDamageLines()),
             'skills'                  => array_map(fn ($skill) => [
                 'id'               => $skill->getId(),
                 'name'             => $skill->getName(),
                 'description'      => $skill->getDescription(),
                 'exhaustPointCost' => $skill->getExhaustPointCost(),
                 'actionPointCost'  => $skill->getActionPointCost(),
-                'damage'           => ['dice' => $skill->getDamage()->getDice(), 'bonus' => $skill->getDamage()->getBonus()],
+                'damageLines'      => array_map(fn (DamageLine $l) => $l->toArray(), $skill->getDamageLines()),
             ], $weapon->getSkills()->toArray()),
         ], Response::HTTP_CREATED);
     }
@@ -141,8 +145,11 @@ class WeaponController extends AbstractController
             }
         }
 
-        if (array_key_exists('damage', $body)) {
-            $weapon->setDamage(new Damage($body['damage']['dice'] ?? [], $body['damage']['bonus'] ?? 0));
+        if (array_key_exists('damageLines', $body)) {
+            $weapon->setDamageLines(array_map(
+                fn (array $line) => DamageLine::fromArray($line),
+                $body['damageLines'],
+            ));
         }
 
         $weaponRepository->save($weapon);

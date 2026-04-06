@@ -5,32 +5,46 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Repository\WeaponRepository;
-use App\ValueObject\Damage;
+use App\ValueObject\DamageLine;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: WeaponRepository::class)]
 class Weapon extends Equipment
 {
     #[ORM\Column(type: 'json', options: ['default' => '[]'])]
-    private array $damageDice = [];
-
-    #[ORM\Column(type: 'integer', options: ['default' => 0])]
-    private int $damageBonus = 0;
+    private array $damageLines = [];
 
     public function getCategory(): string
     {
         return 'weapon';
     }
 
-    public function getDamage(): Damage
+    /** @return DamageLine[] */
+    public function getDamageLines(): array
     {
-        return new Damage($this->damageDice, $this->damageBonus);
+        return array_map(fn (array $line) => DamageLine::fromArray($line), $this->damageLines);
     }
 
-    public function setDamage(Damage $damage): static
+    /** @param DamageLine[] $damageLines */
+    public function setDamageLines(array $damageLines): static
     {
-        $this->damageDice = $damage->getDice();
-        $this->damageBonus = $damage->getBonus();
+        $this->damageLines = array_map(fn (DamageLine $line) => $line->toArray(), $damageLines);
+
+        return $this;
+    }
+
+    public function addDamageLine(DamageLine $line): static
+    {
+        $this->damageLines[] = $line->toArray();
+
+        return $this;
+    }
+
+    public function removeDamageLine(int $faces): static
+    {
+        $this->damageLines = array_values(
+            array_filter($this->damageLines, fn (array $line) => $line['diceFaces'] !== $faces)
+        );
 
         return $this;
     }

@@ -3,7 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\SkillRepository;
-use App\ValueObject\Damage;
+use App\ValueObject\DamageLine;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: SkillRepository::class)]
@@ -12,23 +12,26 @@ class Skill extends Encyclopedia
 {
     use HasDateTimeTrait;
     use HasNoteTrait;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
     private ?int $id = null;
+
     #[ORM\Column(type: 'string')]
     private string $name;
+
     #[ORM\Column(type: 'text')]
     private string $description;
+
     #[ORM\Column(type: 'integer')]
     private int $exhaustPointCost;
+
     #[ORM\Column(type: 'integer')]
     private int $actionPointCost;
-    #[ORM\Column(type: 'json', options: ['default' => '[]'])]
-    private array $damageDice = [];
 
-    #[ORM\Column(type: 'integer', options: ['default' => 0])]
-    private int $damageBonus = 0;
+    #[ORM\Column(type: 'json', options: ['default' => '[]'])]
+    private array $damageLines = [];
 
     public function getId(): ?int
     {
@@ -83,15 +86,32 @@ class Skill extends Encyclopedia
         return $this;
     }
 
-    public function getDamage(): Damage
+    /** @return DamageLine[] */
+    public function getDamageLines(): array
     {
-        return new Damage($this->damageDice, $this->damageBonus);
+        return array_map(fn (array $line) => DamageLine::fromArray($line), $this->damageLines);
     }
 
-    public function setDamage(Damage $damage): Skill
+    /** @param DamageLine[] $damageLines */
+    public function setDamageLines(array $damageLines): Skill
     {
-        $this->damageDice = $damage->getDice();
-        $this->damageBonus = $damage->getBonus();
+        $this->damageLines = array_map(fn (DamageLine $line) => $line->toArray(), $damageLines);
+
+        return $this;
+    }
+
+    public function addDamageLine(DamageLine $line): Skill
+    {
+        $this->damageLines[] = $line->toArray();
+
+        return $this;
+    }
+
+    public function removeDamageLine(int $faces): Skill
+    {
+        $this->damageLines = array_values(
+            array_filter($this->damageLines, fn (array $line) => $line['diceFaces'] !== $faces)
+        );
 
         return $this;
     }

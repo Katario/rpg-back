@@ -9,7 +9,7 @@ use App\Entity\Skill;
 use App\Repository\ArmorRepository;
 use App\Repository\CharacterRepository;
 use App\Repository\SkillRepository;
-use App\ValueObject\Damage;
+use App\ValueObject\DamageLine;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -52,6 +52,13 @@ class ArmorController extends AbstractController
             ->setGame($character->getGame())
             ->setBeing($character);
 
+        if (isset($body['damageLines'])) {
+            $armor->setDamageLines(array_map(
+                fn (array $line) => DamageLine::fromArray($line),
+                $body['damageLines'],
+            ));
+        }
+
         foreach ($body['skills'] ?? [] as $skillData) {
             if (empty($skillData['name'])) {
                 continue;
@@ -63,7 +70,10 @@ class ArmorController extends AbstractController
                     ->setDescription('')
                     ->setExhaustPointCost((int) ($skillData['exhaustPointCost'] ?? 0))
                     ->setActionPointCost((int) ($skillData['actionPointCost'] ?? 0))
-                    ->setDamage(new Damage($skillData['damage']['dice'] ?? [], (int) ($skillData['damage']['bonus'] ?? 0)))
+                    ->setDamageLines(array_map(
+                        fn (array $line) => DamageLine::fromArray($line),
+                        $skillData['damageLines'] ?? [],
+                    ))
                     ->setIsReady(true)
                     ->setIsPrivate(false);
                 $em->persist($skill);
@@ -82,13 +92,14 @@ class ArmorController extends AbstractController
             'maxDurabilityPoints'     => $armor->getMaxDurabilityPoints(),
             'description'             => $armor->getDescription(),
             'isEquipped'              => $armor->isEquipped(),
+            'damageLines'             => array_map(fn (DamageLine $l) => $l->toArray(), $armor->getDamageLines()),
             'skills'                  => array_map(fn ($skill) => [
                 'id'               => $skill->getId(),
                 'name'             => $skill->getName(),
                 'description'      => $skill->getDescription(),
                 'exhaustPointCost' => $skill->getExhaustPointCost(),
                 'actionPointCost'  => $skill->getActionPointCost(),
-                'damage'           => ['dice' => $skill->getDamage()->getDice(), 'bonus' => $skill->getDamage()->getBonus()],
+                'damageLines'      => array_map(fn (DamageLine $l) => $l->toArray(), $skill->getDamageLines()),
             ], $armor->getSkills()->toArray()),
         ], Response::HTTP_CREATED);
     }
