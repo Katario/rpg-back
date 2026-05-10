@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Calculator\LoadCalculator;
 use App\Entity\Armor;
 use App\Entity\BeingItem;
 use App\Entity\BeingTalent;
@@ -15,8 +16,6 @@ use App\Entity\Skill;
 use App\Entity\Spell;
 use App\Entity\Talent;
 use App\Entity\Weapon;
-use App\ValueObject\DamageLine;
-use App\Calculator\LoadCalculator;
 use App\Repository\CharacterRepository;
 use App\Repository\GameRepository;
 use App\Repository\ItemRepository;
@@ -24,20 +23,24 @@ use App\Repository\KindRepository;
 use App\Repository\SkillRepository;
 use App\Repository\SpellRepository;
 use App\Repository\TalentRepository;
+use App\ValueObject\DamageLine;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 #[Route('/api')]
 class CharacterController extends AbstractController
 {
     private const array ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
     private const string AVATAR_UPLOAD_DIR = '/uploads/avatars';
+    private const string AVATAR_MAX_SIZE = '5M';
 
     #[Route('/characters/import', name: 'api_character_import', methods: ['POST'])]
     public function import(
@@ -171,7 +174,7 @@ class CharacterController extends AbstractController
 
         foreach ($data['equipment'] ?? [] as $equipData) {
             $hasAttacks = !empty($equipData['attacks']);
-            $isArmor = !$hasAttacks && ($equipData['type'] === 'armor' || ($equipData['hp']['max'] ?? 0) > 0);
+            $isArmor = !$hasAttacks && ('armor' === $equipData['type'] || ($equipData['hp']['max'] ?? 0) > 0);
 
             if ($hasAttacks || $isArmor) {
                 $equipment = $hasAttacks ? new Weapon() : new Armor();
@@ -273,25 +276,25 @@ class CharacterController extends AbstractController
         );
 
         $serializeSkill = fn ($skill) => [
-            'id'               => $skill->getId(),
-            'name'             => $skill->getName(),
-            'description'      => $skill->getDescription(),
+            'id' => $skill->getId(),
+            'name' => $skill->getName(),
+            'description' => $skill->getDescription(),
             'exhaustPointCost' => $skill->getExhaustPointCost(),
-            'actionPointCost'  => $skill->getActionPointCost(),
-            'damageLines'      => $serializeDamageLines($skill),
+            'actionPointCost' => $skill->getActionPointCost(),
+            'damageLines' => $serializeDamageLines($skill),
         ];
 
         $serializeEquipment = fn ($equipment) => [
-            'id'                      => $equipment->getId(),
-            'name'                    => $equipment->getName(),
-            'value'                   => $equipment->getValue(),
-            'weight'                  => $equipment->getWeight(),
+            'id' => $equipment->getId(),
+            'name' => $equipment->getName(),
+            'value' => $equipment->getValue(),
+            'weight' => $equipment->getWeight(),
             'currentDurabilityPoints' => $equipment->getCurrentDurabilityPoints(),
-            'maxDurabilityPoints'     => $equipment->getMaxDurabilityPoints(),
-            'description'             => $equipment->getDescription(),
-            'isEquipped'              => $equipment->isEquipped(),
-            'damageLines'             => $serializeDamageLines($equipment),
-            'skills'                  => array_map($serializeSkill, $equipment->getSkills()->toArray()),
+            'maxDurabilityPoints' => $equipment->getMaxDurabilityPoints(),
+            'description' => $equipment->getDescription(),
+            'isEquipped' => $equipment->isEquipped(),
+            'damageLines' => $serializeDamageLines($equipment),
+            'skills' => array_map($serializeSkill, $equipment->getSkills()->toArray()),
         ];
 
         $allEquipments = $character->getEquipments()->toArray();
@@ -308,17 +311,17 @@ class CharacterController extends AbstractController
 
         $spells = array_map(
             fn ($spell) => [
-                'id'              => $spell->getId(),
-                'name'            => $spell->getName(),
-                'description'     => $spell->getDescription(),
-                'school'          => $spell->getSchool(),
-                'manaCost'        => $spell->getManaCost(),
+                'id' => $spell->getId(),
+                'name' => $spell->getName(),
+                'description' => $spell->getDescription(),
+                'school' => $spell->getSchool(),
+                'manaCost' => $spell->getManaCost(),
                 'actionPointCost' => $spell->getActionPointCost(),
-                'damageLines'     => $serializeDamageLines($spell),
-                'range'           => $spell->getRange(),
-                'impactZone'      => $spell->getImpactZone(),
-                'duration'        => $spell->getDuration(),
-                'type'            => $spell->getType(),
+                'damageLines' => $serializeDamageLines($spell),
+                'range' => $spell->getRange(),
+                'impactZone' => $spell->getImpactZone(),
+                'duration' => $spell->getDuration(),
+                'type' => $spell->getType(),
             ],
             $character->getSpells()->toArray(),
         );
@@ -334,12 +337,12 @@ class CharacterController extends AbstractController
                 ));
 
                 return [
-                    'name'         => $characterTalent->getName(),
-                    'value'        => $value,
+                    'name' => $characterTalent->getName(),
+                    'value' => $value,
                     'talentLevels' => array_map(fn ($tl) => [
-                        'tier'           => $tl->getTier()->value,
+                        'tier' => $tl->getTier()->value,
                         'requiredPoints' => $tl->getRequiredPoints(),
-                        'description'    => $tl->getDescription(),
+                        'description' => $tl->getDescription(),
                     ], $unlockedLevels),
                 ];
             },
@@ -476,11 +479,11 @@ class CharacterController extends AbstractController
         }
 
         $map = [
-            'currentHealthPoints'  => 'setCurrentHealthPoints',
-            'currentManaPoints'    => 'setCurrentManaPoints',
-            'currentActionPoints'  => 'setCurrentActionPoints',
+            'currentHealthPoints' => 'setCurrentHealthPoints',
+            'currentManaPoints' => 'setCurrentManaPoints',
+            'currentActionPoints' => 'setCurrentActionPoints',
             'currentExhaustPoints' => 'setCurrentExhaustPoints',
-            'currentMentalPoints'  => 'setCurrentMentalPoints',
+            'currentMentalPoints' => 'setCurrentMentalPoints',
         ];
 
         foreach ($map as $field => $setter) {
@@ -530,6 +533,7 @@ class CharacterController extends AbstractController
         string $token,
         Request $request,
         CharacterRepository $characterRepository,
+        ValidatorInterface $validator,
         #[Autowire('%kernel.project_dir%')] string $projectDir,
     ): JsonResponse {
         $character = $characterRepository->findOneByToken($token);
@@ -544,29 +548,85 @@ class CharacterController extends AbstractController
             return $this->json(['error' => 'No file provided'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (!in_array($file->getMimeType(), self::ALLOWED_MIME_TYPES, true)) {
+        $violations = $validator->validate($file, new Assert\Image([
+            'maxSize' => self::AVATAR_MAX_SIZE,
+            'mimeTypes' => self::ALLOWED_MIME_TYPES,
+            'mimeTypesMessage' => 'Invalid file type. Allowed: jpeg, png, webp.',
+            'maxSizeMessage' => 'Avatar must be smaller than '.self::AVATAR_MAX_SIZE.'.',
+        ]));
+
+        foreach ($violations as $violation) {
             return $this->json(
-                ['error' => 'Invalid file type. Allowed: jpeg, png, webp'],
-                Response::HTTP_UNSUPPORTED_MEDIA_TYPE,
+                ['error' => $violation->getMessage()],
+                Response::HTTP_BAD_REQUEST,
             );
         }
 
-        $filename = bin2hex(random_bytes(16)).'.'.$file->guessExtension();
+        $extension = $file->guessExtension() ?? match ($file->getMimeType()) {
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+            default => 'bin',
+        };
+
+        $filename = bin2hex(random_bytes(16)).'.'.$extension;
         $uploadDir = $projectDir.'/public'.self::AVATAR_UPLOAD_DIR;
 
         if (!is_dir($uploadDir)) {
             mkdir($uploadDir, 0755, true);
         }
 
+        $previousAvatarUrl = $character->getAvatarUrl();
+
         $file->move($uploadDir, $filename);
 
         $avatarPath = self::AVATAR_UPLOAD_DIR.'/'.$filename;
-        $character->setAvatarUrl($avatarPath);
-        $characterRepository->save($character);
+
+        try {
+            $character->setAvatarUrl($avatarPath);
+            $characterRepository->save($character);
+        } catch (\Throwable $e) {
+            @unlink($uploadDir.'/'.$filename);
+            throw $e;
+        }
+
+        if ($previousAvatarUrl) {
+            $previousFile = $projectDir.'/public'.$previousAvatarUrl;
+            if (is_file($previousFile)) {
+                @unlink($previousFile);
+            }
+        }
 
         return $this->json(
             ['avatarUrl' => $request->getSchemeAndHttpHost().$avatarPath],
             Response::HTTP_OK,
         );
+    }
+
+    #[Route('/characters/{token}/avatar', name: 'api_character_avatar_delete', methods: ['DELETE'])]
+    public function deleteAvatar(
+        string $token,
+        CharacterRepository $characterRepository,
+        #[Autowire('%kernel.project_dir%')] string $projectDir,
+    ): JsonResponse {
+        $character = $characterRepository->findOneByToken($token);
+
+        if (!$character) {
+            return $this->json(['error' => 'Character not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $avatarUrl = $character->getAvatarUrl();
+
+        if ($avatarUrl) {
+            $character->setAvatarUrl(null);
+            $characterRepository->save($character);
+
+            $file = $projectDir.'/public'.$avatarUrl;
+            if (is_file($file)) {
+                @unlink($file);
+            }
+        }
+
+        return $this->json(null, Response::HTTP_NO_CONTENT);
     }
 }

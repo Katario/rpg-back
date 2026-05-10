@@ -17,7 +17,8 @@ Players identify their character using a `token` (hex string generated on import
 | `PATCH` | `/api/characters/{token}/stats` | Update current stat values |
 | `POST` | `/api/characters/{token}/level-up` | Level up |
 | `DELETE` | `/api/characters/{token}` | Delete character |
-| `POST` | `/api/characters/{token}/avatar` | Upload avatar image |
+| `POST` | `/api/characters/{token}/avatar` | Upload avatar image (multipart) |
+| `DELETE` | `/api/characters/{token}/avatar` | Remove avatar image |
 
 ### Weapons & Armors
 
@@ -36,11 +37,13 @@ Players identify their character using a `token` (hex string generated on import
 
 ### Items
 
-| Method | Route | Description |
-|---|---|---|
-| `POST` | `/api/characters/{token}/items` | Add item to character |
-| `PATCH` | `/api/characters/{token}/items/{itemId}` | Update quantity (`quantity` required) |
-| `DELETE` | `/api/characters/{token}/items/{itemId}` | Remove item |
+| Method | Route | Description | Response |
+|---|---|---|---|
+| `POST` | `/api/characters/{token}/items` | Add item to character | `{ id, quantity, currentLoadPoints }` |
+| `PATCH` | `/api/characters/{token}/items/{itemId}` | Update quantity (`quantity` required) | `{ currentLoadPoints }` |
+| `DELETE` | `/api/characters/{token}/items/{itemId}` | Remove item | `{ currentLoadPoints }` |
+
+`currentLoadPoints` is returned in grams after every inventory mutation so the front can update the load bar without a full character reload.
 
 ### Talents
 
@@ -77,6 +80,33 @@ Players identify their character using a `token` (hex string generated on import
   "currentMentalPoints": 80
 }
 ```
+
+## Avatar upload
+
+`POST /api/characters/{token}/avatar` expects `multipart/form-data` with a single field `avatar`.
+
+- **Allowed MIME types**: `image/jpeg`, `image/png`, `image/webp`
+- **Max size**: 5 MB
+- **Validation**: the file must be a decodable image (not just a matching MIME type)
+- On success, the previous avatar file is deleted from disk.
+
+```http
+POST /api/characters/abc123/avatar
+Content-Type: multipart/form-data; boundary=...
+
+avatar=@portrait.png
+```
+
+Response `200 OK`:
+```json
+{ "avatarUrl": "https://api.example.com/uploads/avatars/<random>.png" }
+```
+
+Errors:
+- `400 Bad Request` — no file, invalid MIME, file too large, not a real image
+- `404 Not Found` — character token unknown
+
+`DELETE /api/characters/{token}/avatar` removes the avatar file from disk and resets `avatarUrl` to `null`. Returns `204 No Content` (idempotent: returns 204 even if no avatar was set).
 
 ## Level-up payload
 

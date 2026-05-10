@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Calculator\LoadCalculator;
 use App\Entity\BeingItem;
 use App\Entity\Item;
 use App\Repository\BeingItemRepository;
@@ -25,6 +26,7 @@ class ItemController extends AbstractController
         CharacterRepository $characterRepository,
         ItemRepository $itemRepository,
         BeingItemRepository $beingItemRepository,
+        LoadCalculator $loadCalculator,
     ): JsonResponse {
         $character = $characterRepository->findOneByToken($token);
 
@@ -64,7 +66,11 @@ class ItemController extends AbstractController
 
         $beingItemRepository->save($beingItem);
 
-        return $this->json(['id' => $item->getId(), 'quantity' => $beingItem->getQuantity()], Response::HTTP_OK);
+        return $this->json([
+            'id'                 => $item->getId(),
+            'quantity'           => $beingItem->getQuantity(),
+            'currentLoadPoints'  => $loadCalculator->computeCurrentLoadPoints($character),
+        ], Response::HTTP_OK);
     }
 
     #[Route('/characters/{token}/items/{itemId}', name: 'api_character_item_update', methods: ['PATCH'])]
@@ -75,6 +81,7 @@ class ItemController extends AbstractController
         CharacterRepository $characterRepository,
         ItemRepository $itemRepository,
         BeingItemRepository $beingItemRepository,
+        LoadCalculator $loadCalculator,
     ): JsonResponse {
         $character = $characterRepository->findOneByToken($token);
 
@@ -103,7 +110,10 @@ class ItemController extends AbstractController
         $beingItem->setQuantity((int) $body['quantity']);
         $beingItemRepository->save($beingItem);
 
-        return $this->json(null, Response::HTTP_NO_CONTENT);
+        return $this->json([
+            'quantity'          => $beingItem->getQuantity(),
+            'currentLoadPoints' => $loadCalculator->computeCurrentLoadPoints($character),
+        ], Response::HTTP_OK);
     }
 
     #[Route('/characters/{token}/items/{itemId}', name: 'api_character_item_delete', methods: ['DELETE'])]
@@ -113,6 +123,7 @@ class ItemController extends AbstractController
         CharacterRepository $characterRepository,
         ItemRepository $itemRepository,
         BeingItemRepository $beingItemRepository,
+        LoadCalculator $loadCalculator,
     ): JsonResponse {
         $character = $characterRepository->findOneByToken($token);
 
@@ -134,6 +145,8 @@ class ItemController extends AbstractController
 
         $beingItemRepository->delete($beingItem);
 
-        return $this->json(null, Response::HTTP_NO_CONTENT);
+        return $this->json([
+            'currentLoadPoints' => $loadCalculator->computeCurrentLoadPoints($character),
+        ], Response::HTTP_OK);
     }
 }

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Tests\Integration\Controller\Api;
 
 use App\Controller\Api\CharacterController;
-use App\Fixtures\DataFixtures\Factory\WeaponFactory;
 use App\Fixtures\DataFixtures\Factory\BeingTalentFactory;
 use App\Fixtures\DataFixtures\Factory\CharacterClassFactory;
 use App\Fixtures\DataFixtures\Factory\CharacterFactory;
@@ -14,8 +13,10 @@ use App\Fixtures\DataFixtures\Factory\KindFactory;
 use App\Fixtures\DataFixtures\Factory\SkillFactory;
 use App\Fixtures\DataFixtures\Factory\SpellFactory;
 use App\Fixtures\DataFixtures\Factory\TalentFactory;
+use App\Fixtures\DataFixtures\Factory\WeaponFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Zenstruck\Foundry\Test\Factories;
 use Zenstruck\Foundry\Test\ResetDatabase;
 
@@ -54,7 +55,7 @@ class CharacterControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
 
-        $data = json_decode($client->getResponse()->getContent(), true);
+        $data = json_decode((string) $client->getResponse()->getContent(), true);
 
         self::assertSame($character->getId(), $data['id']);
         self::assertSame('test-token-abc123', $data['token']);
@@ -88,7 +89,7 @@ class CharacterControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
 
-        $data = json_decode($client->getResponse()->getContent(), true);
+        $data = json_decode((string) $client->getResponse()->getContent(), true);
 
         self::assertNull($data['kind']);
         self::assertNull($data['characterClass']);
@@ -126,7 +127,7 @@ class CharacterControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
 
-        $data = json_decode($client->getResponse()->getContent(), true);
+        $data = json_decode((string) $client->getResponse()->getContent(), true);
 
         self::assertCount(1, $data['spells']);
         self::assertSame('Fireball', $data['spells'][0]['name']);
@@ -149,7 +150,7 @@ class CharacterControllerTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(404);
 
-        $data = json_decode($client->getResponse()->getContent(), true);
+        $data = json_decode((string) $client->getResponse()->getContent(), true);
         self::assertSame('Character not found', $data['error']);
     }
 
@@ -178,7 +179,177 @@ class CharacterControllerTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(404);
 
-        $data = json_decode($client->getResponse()->getContent(), true);
+        $data = json_decode((string) $client->getResponse()->getContent(), true);
         self::assertSame('Character not found', $data['error']);
+    }
+
+    /**
+     * @var list<string>
+     */
+    private array $createdAvatarFiles = [];
+
+    protected function tearDown(): void
+    {
+        foreach ($this->createdAvatarFiles as $path) {
+            if (is_file($path)) {
+                @unlink($path);
+            }
+        }
+        $this->createdAvatarFiles = [];
+
+        parent::tearDown();
+    }
+
+    private function createTempImage(string $mime = 'image/png'): UploadedFile
+    {
+        $tmp = tempnam(sys_get_temp_dir(), 'avatar_');
+        $im = imagecreatetruecolor(8, 8);
+        match ($mime) {
+            'image/png' => imagepng($im, $tmp),
+            'image/jpeg' => imagejpeg($im, $tmp),
+            'image/webp' => imagewebp($im, $tmp),
+            default => throw new \InvalidArgumentException('Unsupported mime'),
+        };
+
+        $ext = ['image/png' => 'png', 'image/jpeg' => 'jpg', 'image/webp' => 'webp'][$mime];
+
+        return new UploadedFile($tmp, 'avatar.'.$ext, $mime, null, true);
+    }
+
+    private function uploadDir(): string
+    {
+        return self::getContainer()->getParameter('kernel.project_dir').'/public/uploads/avatars';
+    }
+
+    public function testUploadAvatarSucceeds(): void
+    {
+        $client = static::createClient();
+
+        $game = GameFactory::createOne();
+        CharacterFactory::createOne([
+            'game' => $game,
+            'token' => 'avatar-token-1',
+        ]);
+
+        $file = $this->createTempImage();
+
+        $client->request('POST', '/api/characters/avatar-token-1/avatar', files: ['avatar' => $file]);
+
+        self::assertResponseIsSuccessful();
+        $data = json_decode((string) $client->getResponse()->getContent(), true);
+        self::assertStringContainsString('/uploads/avatars/', $data['avatarUrl']);
+
+        $relative = (string) parse_url($data['avatarUrl'], \PHP_URL_PATH);
+        $this->createdAvatarFiles[] = $this->uploadDir().'/'.basename($relative);
+        self::assertFileExists($this->createdAvatarFiles[0]);
+    }
+
+    public function testUploadAvatarFailsWithoutFile(): void
+    {
+        $client = static::createClient();
+
+        $game = GameFactory::createOne();
+        CharacterFactory::createOne(['game' => $game, 'token' => 'no-file-token']);
+
+        $client->request('POST', '/api/characters/no-file-token/avatar');
+
+        self::assertResponseStatusCodeSame(400);
+        $data = json_decode((string) $client->getResponse()->getContent(), true);
+        self::assertSame('No file provided', $data['error']);
+    }
+
+    public function testUploadAvatarFailsWithInvalidMimeType(): void
+    {
+        $client = static::createClient();
+
+        $game = GameFactory::createOne();
+        CharacterFactory::createOne(['game' => $game, 'token' => 'bad-mime-token']);
+
+        $tmp = tempnam(sys_get_temp_dir(), 'notimg_');
+        file_put_contents($tmp, 'not an image');
+        $file = new UploadedFile($tmp, 'avatar.txt', 'text/plain', null, true);
+
+        $client->request('POST', '/api/characters/bad-mime-token/avatar', files: ['avatar' => $file]);
+
+        self::assertResponseStatusCodeSame(400);
+        $data = json_decode((string) $client->getResponse()->getContent(), true);
+        self::assertStringContainsString('Invalid file type', $data['error']);
+    }
+
+    public function testUploadAvatarReturns404WhenCharacterNotFound(): void
+    {
+        $client = static::createClient();
+
+        $client->request(
+            'POST',
+            '/api/characters/unknown-token/avatar',
+            files: ['avatar' => $this->createTempImage()],
+        );
+
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testUploadAvatarReplacesPreviousFile(): void
+    {
+        $client = static::createClient();
+
+        $game = GameFactory::createOne();
+        CharacterFactory::createOne(['game' => $game, 'token' => 'replace-token']);
+
+        $client->request(
+            'POST',
+            '/api/characters/replace-token/avatar',
+            files: ['avatar' => $this->createTempImage()],
+        );
+        $first = json_decode((string) $client->getResponse()->getContent(), true);
+        $firstPath = $this->uploadDir().'/'.basename((string) parse_url($first['avatarUrl'], \PHP_URL_PATH));
+        $this->createdAvatarFiles[] = $firstPath;
+        self::assertFileExists($firstPath);
+
+        $client->request(
+            'POST',
+            '/api/characters/replace-token/avatar',
+            files: ['avatar' => $this->createTempImage()],
+        );
+        $second = json_decode((string) $client->getResponse()->getContent(), true);
+        $secondPath = $this->uploadDir().'/'.basename((string) parse_url($second['avatarUrl'], \PHP_URL_PATH));
+        $this->createdAvatarFiles[] = $secondPath;
+
+        self::assertFileDoesNotExist($firstPath);
+        self::assertFileExists($secondPath);
+    }
+
+    public function testDeleteAvatarRemovesFileAndResetsUrl(): void
+    {
+        $client = static::createClient();
+
+        $game = GameFactory::createOne();
+        CharacterFactory::createOne(['game' => $game, 'token' => 'delete-avatar-token']);
+
+        $client->request(
+            'POST',
+            '/api/characters/delete-avatar-token/avatar',
+            files: ['avatar' => $this->createTempImage()],
+        );
+        $uploaded = json_decode((string) $client->getResponse()->getContent(), true);
+        $path = $this->uploadDir().'/'.basename((string) parse_url($uploaded['avatarUrl'], \PHP_URL_PATH));
+        $this->createdAvatarFiles[] = $path;
+
+        $client->request('DELETE', '/api/characters/delete-avatar-token/avatar');
+
+        self::assertResponseStatusCodeSame(204);
+        self::assertFileDoesNotExist($path);
+
+        $client->request('GET', '/api/characters/delete-avatar-token');
+        $data = json_decode((string) $client->getResponse()->getContent(), true);
+        self::assertNull($data['avatarUrl']);
+    }
+
+    public function testDeleteAvatarReturns404WhenCharacterNotFound(): void
+    {
+        $client = static::createClient();
+        $client->request('DELETE', '/api/characters/unknown-token/avatar');
+
+        self::assertResponseStatusCodeSame(404);
     }
 }
