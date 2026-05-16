@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Tests\Integration\Controller\Api;
 
 use App\Controller\Api\CharacterController;
+use App\Entity\Skill;
+use App\Entity\Spell;
 use App\Fixtures\DataFixtures\Factory\BeingTalentFactory;
 use App\Fixtures\DataFixtures\Factory\CharacterClassFactory;
 use App\Fixtures\DataFixtures\Factory\CharacterFactory;
@@ -14,6 +16,8 @@ use App\Fixtures\DataFixtures\Factory\SkillFactory;
 use App\Fixtures\DataFixtures\Factory\SpellFactory;
 use App\Fixtures\DataFixtures\Factory\TalentFactory;
 use App\Fixtures\DataFixtures\Factory\WeaponFactory;
+use App\ValueObject\DamageLine;
+use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -141,6 +145,84 @@ class CharacterControllerTest extends WebTestCase
 
         self::assertCount(1, $data['equipments']);
         self::assertSame('Iron Sword', $data['equipments'][0]['name']);
+    }
+
+    public function testShowExposesIsPassiveForSkillsAndSpells(): void
+    {
+        $client = static::createClient();
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($em instanceof EntityManagerInterface);
+
+        $game = GameFactory::createOne();
+
+        $passiveSkill = (new Skill())
+            ->setName('Meditation')
+            ->setDescription('')
+            ->setExhaustPointCost(0)
+            ->setActionPointCost(0)
+            ->setIsReady(true)
+            ->setIsPrivate(false)
+            ->setDamageLines([]);
+
+        $activeSkill = (new Skill())
+            ->setName('Slash')
+            ->setDescription('')
+            ->setExhaustPointCost(0)
+            ->setActionPointCost(0)
+            ->setIsReady(true)
+            ->setIsPrivate(false)
+            ->setDamageLines([new DamageLine(1, 6, 0)]);
+
+        $passiveSpell = (new Spell())
+            ->setName('Aura')
+            ->setDescription('')
+            ->setManaCost(0)
+            ->setActionPointCost(0)
+            ->setIsReady(true)
+            ->setIsPrivate(false)
+            ->setDamageLines([]);
+
+        $activeSpell = (new Spell())
+            ->setName('Fireball')
+            ->setDescription('')
+            ->setManaCost(0)
+            ->setActionPointCost(0)
+            ->setIsReady(true)
+            ->setIsPrivate(false)
+            ->setDamageLines([new DamageLine(3, 6, 0)]);
+
+        $em->persist($passiveSkill);
+        $em->persist($activeSkill);
+        $em->persist($passiveSpell);
+        $em->persist($activeSpell);
+
+        $character = CharacterFactory::createOne([
+            'game' => $game,
+            'token' => 'is-passive-token',
+            'skills' => [$passiveSkill, $activeSkill],
+            'spells' => [$passiveSpell, $activeSpell],
+        ]);
+
+        $em->flush();
+
+        $client->request('GET', '/api/characters/is-passive-token');
+
+        self::assertResponseIsSuccessful();
+        $data = json_decode((string) $client->getResponse()->getContent(), true);
+
+        $skillsByName = [];
+        foreach ($data['skills'] as $skill) {
+            $skillsByName[$skill['name']] = $skill;
+        }
+        self::assertTrue($skillsByName['Meditation']['isPassive']);
+        self::assertFalse($skillsByName['Slash']['isPassive']);
+
+        $spellsByName = [];
+        foreach ($data['spells'] as $spell) {
+            $spellsByName[$spell['name']] = $spell;
+        }
+        self::assertTrue($spellsByName['Aura']['isPassive']);
+        self::assertFalse($spellsByName['Fireball']['isPassive']);
     }
 
     public function testShowReturns404WhenCharacterNotFound(): void

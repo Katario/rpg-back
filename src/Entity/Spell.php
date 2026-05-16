@@ -195,4 +195,10 @@ class Spell extends Encyclopedia
 
         return $this;
     }
+
+    // TODO: replace with a persisted boolean column.
+    public function isPassive(): bool
+    {
+        return 0 === count($this->damageLines);
+    }
 }

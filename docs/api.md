@@ -12,13 +12,19 @@ Players identify their character using a `token` (hex string generated on import
 
 | Method | Route | Description |
 |---|---|---|
-| `POST` | `/api/characters/import` | Import a character from JSON |
+| `POST` | `/api/characters/import` | Import a character from JSON. Returns the full character payload (same shape as `GET /api/characters/{token}`) with status `201`. |
 | `GET` | `/api/characters/{token}` | Get full character sheet |
 | `PATCH` | `/api/characters/{token}/stats` | Update current stat values |
 | `POST` | `/api/characters/{token}/level-up` | Level up |
 | `DELETE` | `/api/characters/{token}` | Delete character |
 | `POST` | `/api/characters/{token}/avatar` | Upload avatar image (multipart) |
 | `DELETE` | `/api/characters/{token}/avatar` | Remove avatar image |
+
+The character payload (returned by `GET /api/characters/{token}` and `POST /api/characters/import`) includes:
+
+- `weapons[].damageLines`, `armors[].damageLines`, `skills[].damageLines`, `spells[].damageLines` — raw array of damage line objects: `{ diceCount, diceFaces, fixedAmount, type, element }` (see `docs/damage.md`).
+- `spells[].type` — `"active"` or `"passive"`.
+- `skills[].isPassive`, `spells[].isPassive` — `true` when the entry has no `damageLines`. Currently derived on the fly; will be backed by a persisted column in an upcoming migration.
 
 ### Weapons & Armors
 
@@ -80,6 +86,12 @@ Players identify their character using a `token` (hex string generated on import
   "currentMentalPoints": 80
 }
 ```
+
+Validation:
+
+- Each provided field must be a JSON integer. Strings, floats, booleans, etc. are rejected with `400 Bad Request`.
+- Each provided value must satisfy `0 <= value <= max*Points` (using the character's current max for the corresponding stat). Out-of-range values return `422 Unprocessable Entity`.
+- Unknown fields are silently ignored. Returns `204 No Content` on success.
 
 ## Avatar upload
 

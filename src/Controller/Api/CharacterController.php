@@ -53,6 +53,7 @@ class CharacterController extends AbstractController
         SpellRepository $spellRepository,
         ItemRepository $itemRepository,
         SkillRepository $skillRepository,
+        LoadCalculator $loadCalculator,
     ): JsonResponse {
         $body = json_decode($request->getContent(), true);
 
@@ -255,7 +256,7 @@ class CharacterController extends AbstractController
 
         $em->flush();
 
-        return $this->json(['token' => $character->getToken(), 'id' => $character->getId()], Response::HTTP_CREATED);
+        return $this->json($this->serializeCharacter($character, $request, $loadCalculator), Response::HTTP_CREATED);
     }
 
     #[Route('/characters/{token}', name: 'api_character_show', methods: ['GET'])]
@@ -267,6 +268,14 @@ class CharacterController extends AbstractController
             return $this->json(['error' => 'Character not found'], Response::HTTP_NOT_FOUND);
         }
 
+        return $this->json($this->serializeCharacter($character, $request, $loadCalculator));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function serializeCharacter(Character $character, Request $request, LoadCalculator $loadCalculator): array
+    {
         $kind = $character->getKind();
         $characterClass = $character->getCharacterClass();
 
@@ -282,6 +291,7 @@ class CharacterController extends AbstractController
             'exhaustPointCost' => $skill->getExhaustPointCost(),
             'actionPointCost' => $skill->getActionPointCost(),
             'damageLines' => $serializeDamageLines($skill),
+            'isPassive' => $skill->isPassive(),
         ];
 
         $serializeEquipment = fn ($equipment) => [
@@ -322,6 +332,7 @@ class CharacterController extends AbstractController
                 'impactZone' => $spell->getImpactZone(),
                 'duration' => $spell->getDuration(),
                 'type' => $spell->getType(),
+                'isPassive' => $spell->isPassive(),
             ],
             $character->getSpells()->toArray(),
         );
@@ -371,7 +382,7 @@ class CharacterController extends AbstractController
             $character->getSecondaryTalents()->toArray(),
         );
 
-        return $this->json([
+        return [
             'id' => $character->getId(),
             'token' => $character->getToken(),
             'name' => $character->getName(),
@@ -431,7 +442,7 @@ class CharacterController extends AbstractController
             'talents' => $talents,
             'primaryTalents' => $primaryTalents,
             'secondaryTalents' => $secondaryTalents,
-        ]);
+        ];
     }
 
     #[Route('/characters/{token}/level-up', name: 'api_character_level_up', methods: ['POST'])]
@@ -479,17 +490,35 @@ class CharacterController extends AbstractController
         }
 
         $map = [
-            'currentHealthPoints' => 'setCurrentHealthPoints',
-            'currentManaPoints' => 'setCurrentManaPoints',
-            'currentActionPoints' => 'setCurrentActionPoints',
-            'currentExhaustPoints' => 'setCurrentExhaustPoints',
-            'currentMentalPoints' => 'setCurrentMentalPoints',
+            'currentHealthPoints' => ['setCurrentHealthPoints', 'getMaxHealthPoints'],
+            'currentManaPoints' => ['setCurrentManaPoints', 'getMaxManaPoints'],
+            'currentActionPoints' => ['setCurrentActionPoints', 'getMaxActionPoints'],
+            'currentExhaustPoints' => ['setCurrentExhaustPoints', 'getMaxExhaustPoints'],
+            'currentMentalPoints' => ['setCurrentMentalPoints', 'getMaxMentalPoints'],
         ];
 
-        foreach ($map as $field => $setter) {
-            if (array_key_exists($field, $body)) {
-                $character->$setter((int) $body[$field]);
+        foreach ($map as $field => [$setter, $maxGetter]) {
+            if (!array_key_exists($field, $body)) {
+                continue;
             }
+
+            $value = $body[$field];
+            if (!is_int($value)) {
+                return $this->json(
+                    ['error' => sprintf('Field "%s" must be an integer', $field)],
+                    Response::HTTP_BAD_REQUEST,
+                );
+            }
+
+            $max = $character->$maxGetter();
+            if ($value < 0 || $value > $max) {
+                return $this->json(
+                    ['error' => sprintf('Field "%s" must be between 0 and %d', $field, $max)],
+                    Response::HTTP_UNPROCESSABLE_ENTITY,
+                );
+            }
+
+            $character->$setter($value);
         }
 
         $characterRepository->save($character);
