@@ -41,6 +41,42 @@ The character payload (returned by `GET /api/characters/{token}` and `POST /api/
 | `POST` | `/api/characters/{token}/armors/{id}/skills` | Add skill |
 | `DELETE` | `/api/characters/{token}/armors/{id}/skills/{skillId}` | Remove skill |
 
+Damage on weapons, armors and their skills is sent as a `damageLines` array (same shape as the read model — see `docs/damage.md`). Each `DamageLine` is `{ diceCount, diceFaces, fixedAmount, type, element }`. The legacy `damage: { dice, bonus }` shape is **not** supported.
+
+```json
+// POST /api/characters/{token}/weapons
+{
+  "name": "Longsword",
+  "description": "",
+  "weight": 1500,
+  "currentDurabilityPoints": 20,
+  "maxDurabilityPoints": 20,
+  "isEquipped": false,
+  "damageLines": [
+    { "diceCount": 2, "diceFaces": 6, "fixedAmount": 3, "type": "physical", "element": null }
+  ],
+  "skills": [
+    {
+      "name": "Heavy Strike",
+      "exhaustPointCost": 2,
+      "actionPointCost": 1,
+      "damageLines": [
+        { "diceCount": 3, "diceFaces": 6, "fixedAmount": 0, "type": "physical", "element": null }
+      ]
+    },
+    {
+      "name": "Steady Stance",
+      "exhaustPointCost": 0,
+      "actionPointCost": 0
+    }
+  ]
+}
+```
+
+Response `201 Created` returns the persisted weapon (resp. armor), including `damageLines` for the item itself and, for each skill, `damageLines` + `isPassive` (same shape as in the character payload — `isPassive` is `true` when the skill has no `damageLines`).
+
+Armors follow the same payload shape **without** the top-level `damageLines` (armors only carry skills, not direct damage).
+
 ### Items
 
 | Method | Route | Description | Response |

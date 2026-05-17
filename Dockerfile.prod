@@ -65,7 +65,10 @@ RUN addgroup --gid 1000 user \
     && usermod -aG www-data user \
     && mkdir -p var/cache var/log \
     && chown -R user:www-data var/ \
-    && chmod -R 775 var/
+    && chmod -R 775 var/ \
+    && mkdir -p public/uploads/avatars \
+    && chown -R user:www-data public/uploads \
+    && chmod -R 755 public/uploads
 
 USER user
 
@@ -74,7 +77,6 @@ EXPOSE 9000
 ENTRYPOINT ["/usr/local/bin/entrypoint.prod.sh"]
 
 # ===== nginx-production: Nginx avec les assets statiques intégrés =====
-# Les fichiers public/ sont copiés depuis le builder — pas de volume partagé nécessaire.
 # Buildé avec : docker build --target nginx-production -t rpg-back-nginx .
 FROM nginx:1.27-alpine AS nginx-production
 

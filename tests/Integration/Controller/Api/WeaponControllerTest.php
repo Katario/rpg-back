@@ -1,0 +1,76 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Integration\Controller\Api;
+
+use App\Controller\Api\WeaponController;
+use App\Fixtures\DataFixtures\Factory\CharacterFactory;
+use App\Fixtures\DataFixtures\Factory\GameFactory;
+use PHPUnit\Framework\Attributes\CoversClass;
+use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Zenstruck\Foundry\Test\Factories;
+use Zenstruck\Foundry\Test\ResetDatabase;
+
+#[CoversClass(WeaponController::class)]
+class WeaponControllerTest extends WebTestCase
+{
+    use ResetDatabase;
+    use Factories;
+
+    public function testAddWeaponExposesIsPassiveForEachSkill(): void
+    {
+        $client = static::createClient();
+
+        $game = GameFactory::createOne();
+        CharacterFactory::createOne([
+            'game' => $game,
+            'token' => 'weapon-token',
+        ]);
+
+        $payload = [
+            'name' => 'Longsword',
+            'description' => '',
+            'weight' => 1500,
+            'currentDurabilityPoints' => 20,
+            'maxDurabilityPoints' => 20,
+            'isEquipped' => false,
+            'skills' => [
+                [
+                    'name' => 'Heavy Strike',
+                    'exhaustPointCost' => 2,
+                    'actionPointCost' => 1,
+                    'damageLines' => [
+                        ['diceCount' => 2, 'diceFaces' => 6, 'fixedAmount' => 3, 'type' => 'physical', 'element' => null],
+                    ],
+                ],
+                [
+                    'name' => 'Steady Stance',
+                    'exhaustPointCost' => 0,
+                    'actionPointCost' => 0,
+                ],
+            ],
+        ];
+
+        $client->request('POST', '/api/characters/weapon-token/weapons', server: ['CONTENT_TYPE' => 'application/json'], content: json_encode($payload));
+
+        self::assertResponseStatusCodeSame(201);
+
+        $data = json_decode((string) $client->getResponse()->getContent(), true);
+
+        self::assertCount(2, $data['skills']);
+
+        $bySkillName = [];
+        foreach ($data['skills'] as $skill) {
+            $bySkillName[$skill['name']] = $skill;
+        }
+
+        self::assertArrayHasKey('isPassive', $bySkillName['Heavy Strike']);
+        self::assertFalse($bySkillName['Heavy Strike']['isPassive']);
+        self::assertNotEmpty($bySkillName['Heavy Strike']['damageLines']);
+
+        self::assertArrayHasKey('isPassive', $bySkillName['Steady Stance']);
+        self::assertTrue($bySkillName['Steady Stance']['isPassive']);
+        self::assertSame([], $bySkillName['Steady Stance']['damageLines']);
+    }
+}

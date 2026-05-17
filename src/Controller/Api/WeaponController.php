@@ -84,22 +84,23 @@ class WeaponController extends AbstractController
         $weaponRepository->save($weapon);
 
         return $this->json([
-            'id'                      => $weapon->getId(),
-            'name'                    => $weapon->getName(),
-            'value'                   => $weapon->getValue(),
-            'weight'                  => $weapon->getWeight(),
+            'id' => $weapon->getId(),
+            'name' => $weapon->getName(),
+            'value' => $weapon->getValue(),
+            'weight' => $weapon->getWeight(),
             'currentDurabilityPoints' => $weapon->getCurrentDurabilityPoints(),
-            'maxDurabilityPoints'     => $weapon->getMaxDurabilityPoints(),
-            'description'             => $weapon->getDescription(),
-            'isEquipped'              => $weapon->isEquipped(),
-            'damageLines'             => array_map(fn (DamageLine $l) => $l->toArray(), $weapon->getDamageLines()),
-            'skills'                  => array_map(fn ($skill) => [
-                'id'               => $skill->getId(),
-                'name'             => $skill->getName(),
-                'description'      => $skill->getDescription(),
+            'maxDurabilityPoints' => $weapon->getMaxDurabilityPoints(),
+            'description' => $weapon->getDescription(),
+            'isEquipped' => $weapon->isEquipped(),
+            'damageLines' => array_map(fn (DamageLine $l) => $l->toArray(), $weapon->getDamageLines()),
+            'skills' => array_map(fn ($skill) => [
+                'id' => $skill->getId(),
+                'name' => $skill->getName(),
+                'description' => $skill->getDescription(),
                 'exhaustPointCost' => $skill->getExhaustPointCost(),
-                'actionPointCost'  => $skill->getActionPointCost(),
-                'damageLines'      => array_map(fn (DamageLine $l) => $l->toArray(), $skill->getDamageLines()),
+                'actionPointCost' => $skill->getActionPointCost(),
+                'damageLines' => array_map(fn (DamageLine $l) => $l->toArray(), $skill->getDamageLines()),
+                'isPassive' => $skill->isPassive(),
             ], $weapon->getSkills()->toArray()),
         ], Response::HTTP_CREATED);
     }
@@ -131,12 +132,12 @@ class WeaponController extends AbstractController
         }
 
         $map = [
-            'name'                    => 'setName',
-            'description'             => 'setDescription',
+            'name' => 'setName',
+            'description' => 'setDescription',
             'currentDurabilityPoints' => 'setCurrentDurabilityPoints',
-            'maxDurabilityPoints'     => 'setMaxDurabilityPoints',
-            'weight'                  => 'setWeight',
-            'isEquipped'              => 'setIsEquipped',
+            'maxDurabilityPoints' => 'setMaxDurabilityPoints',
+            'weight' => 'setWeight',
+            'isEquipped' => 'setIsEquipped',
         ];
 
         foreach ($map as $field => $setter) {
