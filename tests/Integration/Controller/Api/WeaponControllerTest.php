@@ -73,4 +73,51 @@ class WeaponControllerTest extends WebTestCase
         self::assertTrue($bySkillName['Steady Stance']['isPassive']);
         self::assertSame([], $bySkillName['Steady Stance']['damageLines']);
     }
+
+    public function testUpdateWeaponPersistsCurrentDurabilityPoints(): void
+    {
+        $client = static::createClient();
+
+        $game = GameFactory::createOne();
+        CharacterFactory::createOne([
+            'game' => $game,
+            'token' => 'patch-token',
+        ]);
+
+        $client->request(
+            'POST',
+            '/api/characters/patch-token/weapons',
+            server: ['CONTENT_TYPE' => 'application/json'],
+            content: (string) json_encode([
+                'name' => 'Dagger',
+                'currentDurabilityPoints' => 10,
+                'maxDurabilityPoints' => 10,
+            ]),
+        );
+        self::assertResponseStatusCodeSame(201);
+        $created = json_decode((string) $client->getResponse()->getContent(), true);
+        $weaponId = $created['id'];
+
+        $client->request(
+            'PATCH',
+            "/api/characters/patch-token/weapons/{$weaponId}",
+            server: ['CONTENT_TYPE' => 'application/json'],
+            content: (string) json_encode(['currentDurabilityPoints' => 3]),
+        );
+        self::assertResponseStatusCodeSame(204);
+
+        $client->request('GET', '/api/characters/patch-token');
+        self::assertResponseIsSuccessful();
+        $data = json_decode((string) $client->getResponse()->getContent(), true);
+
+        $weapon = null;
+        foreach ($data['weapons'] as $w) {
+            if ($w['id'] === $weaponId) {
+                $weapon = $w;
+                break;
+            }
+        }
+        self::assertNotNull($weapon);
+        self::assertSame(3, $weapon['currentDurabilityPoints']);
+    }
 }
