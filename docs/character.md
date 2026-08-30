@@ -28,7 +28,7 @@ On level-up, the player distributes **2 points** across stats. Each stat has a u
 | `maxActionPoints` | 1 pt = +10 |
 | `maxExhaustPoints` | 1 pt = +10 |
 | `maxMentalPoints` | 1 pt = +10 |
-| `maxLoadPoints` | 1 pt = +10 |
+| `maxLoadPoints` | 1 pt = +1000 (grams, i.e. 1 kg) |
 
 Increments must be exact multiples of the unit value. The sum of (increment ÷ unit) must equal exactly 2. Additionally, exactly 5 talents must be provided (each gets +3 if primary, +2 if secondary, +1 otherwise).
 

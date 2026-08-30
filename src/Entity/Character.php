@@ -123,7 +123,7 @@ class Character extends Being
         'maxActionPoints' => ['getter' => 'getMaxActionPoints',  'setter' => 'setMaxActionPoints',  'unit' => 10],
         'maxExhaustPoints' => ['getter' => 'getMaxExhaustPoints', 'setter' => 'setMaxExhaustPoints', 'unit' => 10],
         'maxMentalPoints' => ['getter' => 'getMaxMentalPoints',  'setter' => 'setMaxMentalPoints',  'unit' => 10],
-        'maxLoadPoints' => ['getter' => 'getMaxLoadPoints',    'setter' => 'setMaxLoadPoints',    'unit' => 10],
+        'maxLoadPoints' => ['getter' => 'getMaxLoadPoints',    'setter' => 'setMaxLoadPoints',    'unit' => 1000],
     ];
 
     /**
