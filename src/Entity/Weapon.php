@@ -11,6 +11,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity(repositoryClass: WeaponRepository::class)]
 class Weapon extends Equipment
 {
+    /** @var array<int, array<string, mixed>> */
     #[ORM\Column(type: 'json', options: ['default' => '[]'])]
     private array $damageLines = [];
 

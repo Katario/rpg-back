@@ -76,6 +76,3 @@ $entity->removeDamageLine(int $faces): static  // removes all lines with matchin
 ]
 ```
 
-## Import from JSON character sheet
-
-The `parseDamageString()` method in `CharacterController` parses legacy damage strings (e.g. `"2d6"`, `"1d4 +2"`) into a single `DamageLine`. Type defaults to `physical`, element to `null`. Complex strings like `"1d4 +2 au voyage"` are parsed for dice only — text bonuses are ignored.

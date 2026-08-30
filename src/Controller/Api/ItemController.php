@@ -19,6 +19,14 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api')]
 class ItemController extends AbstractController
 {
+    #[Route('/items', name: 'api_items_list', methods: ['GET'])]
+    public function list(ItemRepository $itemRepository): JsonResponse
+    {
+        $items = $itemRepository->findAll();
+
+        return $this->json(array_map(fn (Item $item) => $this->serializeItem($item), $items));
+    }
+
     #[Route('/characters/{token}/items', name: 'api_character_item_add', methods: ['POST'])]
     public function add(
         string $token,
@@ -36,41 +44,49 @@ class ItemController extends AbstractController
 
         $body = json_decode($request->getContent(), true);
 
-        if (empty($body['name'])) {
-            return $this->json(['error' => 'Field "name" is required'], Response::HTTP_BAD_REQUEST);
+        if (empty($body['itemId'])) {
+            return $this->json(['error' => 'Field "itemId" is required'], Response::HTTP_BAD_REQUEST);
         }
 
-        $item = $itemRepository->findOneByName($body['name']);
+        $item = $itemRepository->find((int) $body['itemId']);
+
         if (!$item) {
-            $item = (new Item())
-                ->setName($body['name'])
-                ->setDescription($body['description'] ?? '')
-                ->setValue(0)
-                ->setWeight($body['weight'] ?? 0)
-                ->setIsReady(true)
-                ->setIsPrivate(false);
-            $itemRepository->save($item);
+            return $this->json(['error' => 'Item not found'], Response::HTTP_NOT_FOUND);
         }
 
-        $quantity = isset($body['quantity']) ? (int) $body['quantity'] : 1;
-
-        $beingItem = $beingItemRepository->findOneByBeingAndItem($character, $item);
-        if ($beingItem) {
-            $beingItem->setQuantity($beingItem->getQuantity() + $quantity);
-        } else {
-            $beingItem = (new BeingItem())
-                ->setBeing($character)
-                ->setItem($item)
-                ->setQuantity($quantity);
+        if ($beingItemRepository->findOneByBeingAndItem($character, $item)) {
+            return $this->json(['error' => 'Item already attached'], Response::HTTP_CONFLICT);
         }
 
+        $quantity = isset($body['quantity']) ? max(1, (int) $body['quantity']) : 1;
+
+        $beingItem = (new BeingItem())
+            ->setBeing($character)
+            ->setItem($item)
+            ->setQuantity($quantity);
         $beingItemRepository->save($beingItem);
 
-        return $this->json([
-            'id'                 => $item->getId(),
-            'quantity'           => $beingItem->getQuantity(),
-            'currentLoadPoints'  => $loadCalculator->computeCurrentLoadPoints($character),
-        ], Response::HTTP_OK);
+        return $this->json(
+            $this->serializeItem($item) + [
+                'quantity' => $beingItem->getQuantity(),
+                'currentLoadPoints' => $loadCalculator->computeCurrentLoadPoints($character),
+            ],
+            Response::HTTP_CREATED,
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function serializeItem(Item $item): array
+    {
+        return [
+            'id' => $item->getId(),
+            'name' => $item->getName(),
+            'description' => $item->getDescription(),
+            'weight' => $item->getWeight(),
+            'value' => $item->getValue(),
+        ];
     }
 
     #[Route('/characters/{token}/items/{itemId}', name: 'api_character_item_update', methods: ['PATCH'])]
@@ -111,7 +127,7 @@ class ItemController extends AbstractController
         $beingItemRepository->save($beingItem);
 
         return $this->json([
-            'quantity'          => $beingItem->getQuantity(),
+            'quantity' => $beingItem->getQuantity(),
             'currentLoadPoints' => $loadCalculator->computeCurrentLoadPoints($character),
         ], Response::HTTP_OK);
     }

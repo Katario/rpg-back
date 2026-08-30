@@ -118,12 +118,12 @@ class Character extends Being
     }
 
     private const array LEVELUP_ALLOWED_STATS = [
-        'maxHealthPoints'  => ['getter' => 'getMaxHealthPoints',  'setter' => 'setMaxHealthPoints',  'unit' => 1],
-        'maxManaPoints'    => ['getter' => 'getMaxManaPoints',    'setter' => 'setMaxManaPoints',    'unit' => 1],
-        'maxActionPoints'  => ['getter' => 'getMaxActionPoints',  'setter' => 'setMaxActionPoints',  'unit' => 10],
+        'maxHealthPoints' => ['getter' => 'getMaxHealthPoints',  'setter' => 'setMaxHealthPoints',  'unit' => 1],
+        'maxManaPoints' => ['getter' => 'getMaxManaPoints',    'setter' => 'setMaxManaPoints',    'unit' => 1],
+        'maxActionPoints' => ['getter' => 'getMaxActionPoints',  'setter' => 'setMaxActionPoints',  'unit' => 10],
         'maxExhaustPoints' => ['getter' => 'getMaxExhaustPoints', 'setter' => 'setMaxExhaustPoints', 'unit' => 10],
-        'maxMentalPoints'  => ['getter' => 'getMaxMentalPoints',  'setter' => 'setMaxMentalPoints',  'unit' => 10],
-        'maxLoadPoints'    => ['getter' => 'getMaxLoadPoints',    'setter' => 'setMaxLoadPoints',    'unit' => 10],
+        'maxMentalPoints' => ['getter' => 'getMaxMentalPoints',  'setter' => 'setMaxMentalPoints',  'unit' => 10],
+        'maxLoadPoints' => ['getter' => 'getMaxLoadPoints',    'setter' => 'setMaxLoadPoints',    'unit' => 10],
     ];
 
     /**
@@ -140,17 +140,17 @@ class Character extends Being
         $pointsSpent = 0;
         foreach ($statIncrements as $stat => $increment) {
             $unit = self::LEVELUP_ALLOWED_STATS[$stat]['unit'];
-            if ($increment % $unit !== 0) {
+            if (0 !== $increment % $unit) {
                 throw new \InvalidArgumentException(sprintf('Increment for "%s" must be a multiple of %d, got %d', $stat, $unit, $increment));
             }
             $pointsSpent += $increment / $unit;
         }
 
-        if ($pointsSpent !== 2) {
+        if (2 !== $pointsSpent) {
             throw new \InvalidArgumentException(sprintf('Stats must total 2 points, got %d', $pointsSpent));
         }
 
-        if (count($talentNames) !== 5) {
+        if (5 !== count($talentNames)) {
             throw new \InvalidArgumentException(sprintf('Exactly 5 talents must be selected, got %d', count($talentNames)));
         }
 
@@ -165,9 +165,9 @@ class Character extends Being
             }
 
             $increment = match (true) {
-                in_array($talentName, $primaryTalentNames, true)   => 3,
+                in_array($talentName, $primaryTalentNames, true) => 3,
                 in_array($talentName, $secondaryTalentNames, true) => 2,
-                default                                            => 1,
+                default => 1,
             };
 
             $beingTalent->setValue($beingTalent->getValue() + $increment);

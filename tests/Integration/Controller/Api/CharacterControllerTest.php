@@ -74,7 +74,9 @@ class CharacterControllerTest extends WebTestCase
         self::assertSame('Human', $data['kind']['name']);
         self::assertSame($characterClass->getId(), $data['characterClass']['id']);
         self::assertSame('Warrior', $data['characterClass']['name']);
-        self::assertSame([], $data['equipments']);
+        self::assertSame([], $data['weapons']);
+        self::assertSame([], $data['armors']);
+        self::assertSame([], $data['items']);
         self::assertSame([], $data['spells']);
         self::assertSame([], $data['skills']);
         self::assertSame([], $data['talents']);
@@ -143,15 +145,14 @@ class CharacterControllerTest extends WebTestCase
         self::assertSame('Archery', $data['talents'][0]['name']);
         self::assertSame(7, $data['talents'][0]['value']);
 
-        self::assertCount(1, $data['equipments']);
-        self::assertSame('Iron Sword', $data['equipments'][0]['name']);
+        self::assertCount(1, $data['weapons']);
+        self::assertSame('Iron Sword', $data['weapons'][0]['name']);
     }
 
     public function testShowExposesIsPassiveForSkillsAndSpells(): void
     {
         $client = static::createClient();
         $em = self::getContainer()->get(EntityManagerInterface::class);
-        \assert($em instanceof EntityManagerInterface);
 
         $game = GameFactory::createOne();
 

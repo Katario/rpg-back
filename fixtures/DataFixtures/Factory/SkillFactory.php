@@ -27,7 +27,7 @@ final class SkillFactory extends PersistentProxyObjectFactory
     /**
      * @see https://symfony.com/bundles/ZenstruckFoundryBundle/current/index.html#model-factories
      *
-     * @return array<bool|\DateTimeImmutable|int|string>
+     * @return array<string, mixed>
      */
     protected function defaults(): array
     {
@@ -39,7 +39,7 @@ final class SkillFactory extends PersistentProxyObjectFactory
             'name' => self::faker()->text(),
             'exhaustPointCost' => self::faker()->randomNumber(),
             'actionPointCost' => self::faker()->randomNumber(),
-            'diceValue' => self::faker()->randomElement(['2d6', '1d12', '3d4 + 1']),
+            'damageLines' => [],
             'updatedAt' => \DateTimeImmutable::createFromMutable(self::faker()->dateTime()),
         ];
     }

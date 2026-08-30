@@ -92,12 +92,14 @@ abstract class Being
     #[ORM\OneToMany(targetEntity: BeingTalent::class, mappedBy: 'being', cascade: ['remove'], orphanRemoval: true)]
     protected Collection $talents;
 
+    /** @var Collection<int, Talent> */
     #[ORM\JoinTable(name: 'being_primary_talents')]
     #[ORM\JoinColumn(name: 'being_id', referencedColumnName: 'id', onDelete: 'cascade')]
     #[ORM\InverseJoinColumn(name: 'talent_id', referencedColumnName: 'id')]
     #[ORM\ManyToMany(targetEntity: Talent::class)]
     protected Collection $primaryTalents;
 
+    /** @var Collection<int, Talent> */
     #[ORM\JoinTable(name: 'being_secondary_talents')]
     #[ORM\JoinColumn(name: 'being_id', referencedColumnName: 'id', onDelete: 'cascade')]
     #[ORM\InverseJoinColumn(name: 'talent_id', referencedColumnName: 'id')]
@@ -347,6 +349,9 @@ abstract class Being
         return $this->spells;
     }
 
+    /**
+     * @param Collection<int, Spell> $spells
+     */
     public function setSpells(Collection $spells): static
     {
         $this->spells = $spells;
@@ -394,11 +399,30 @@ abstract class Being
         return $this;
     }
 
+    /**
+     * Replaces the being's items, wrapping each referenced Item into a BeingItem
+     * (quantity 1). Used when instantiating a Being from a template.
+     *
+     * @param Collection<int, Item> $items
+     */
+    public function setItems(Collection $items): static
+    {
+        $this->items = new ArrayCollection();
+        foreach ($items as $item) {
+            $this->addItem((new BeingItem())->setItem($item)->setQuantity(1));
+        }
+
+        return $this;
+    }
+
     public function getSkills(): Collection
     {
         return $this->skills;
     }
 
+    /**
+     * @param Collection<int, Skill> $skills
+     */
     public function setSkills(Collection $skills): static
     {
         $this->skills = $skills;
@@ -454,6 +478,9 @@ abstract class Being
         return $this;
     }
 
+    /**
+     * @return Collection<int, Talent>
+     */
     public function getPrimaryTalents(): Collection
     {
         return $this->primaryTalents;
@@ -468,6 +495,9 @@ abstract class Being
         return $this;
     }
 
+    /**
+     * @return Collection<int, Talent>
+     */
     public function getSecondaryTalents(): Collection
     {
         return $this->secondaryTalents;

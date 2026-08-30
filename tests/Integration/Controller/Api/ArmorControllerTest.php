@@ -52,7 +52,7 @@ class ArmorControllerTest extends WebTestCase
             ],
         ];
 
-        $client->request('POST', '/api/characters/armor-token/armors', server: ['CONTENT_TYPE' => 'application/json'], content: json_encode($payload));
+        $client->request('POST', '/api/characters/armor-token/armors', server: ['CONTENT_TYPE' => 'application/json'], content: (string) json_encode($payload));
 
         self::assertResponseStatusCodeSame(201);
 

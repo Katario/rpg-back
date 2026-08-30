@@ -125,7 +125,10 @@ class ArmamentController
     ): Response|RedirectResponse {
         if ($request->get('armamentTemplateId')) {
             $armamentTemplate = $armamentTemplateRepository->find($request->get('armamentTemplateId'));
-            $factory = $armamentTemplate->getCategory() === 'weapon' ? $weaponFactory : $armorFactory;
+            if (!$armamentTemplate) {
+                throw new NotFoundHttpException('Armament template not found');
+            }
+            $factory = 'weapon' === $armamentTemplate->getCategory() ? $weaponFactory : $armorFactory;
             $armament = $factory->createOneFromEquipmentTemplate($armamentTemplate);
             $armament->setGame($game);
         } else {

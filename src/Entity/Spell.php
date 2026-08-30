@@ -32,6 +32,7 @@ class Spell extends Encyclopedia
     #[ORM\Column(type: 'integer')]
     private int $actionPointCost;
 
+    /** @var array<int, array<string, mixed>> */
     #[ORM\Column(type: 'json', options: ['default' => '[]'])]
     private array $damageLines = [];
 

@@ -24,6 +24,7 @@ class Kind extends Encyclopedia
     #[ORM\Column(type: 'string', length: 100)]
     private string $name;
 
+    /** @var Collection<int, KindBonus> */
     #[ORM\OneToMany(targetEntity: KindBonus::class, mappedBy: 'kind', cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $bonuses;
 

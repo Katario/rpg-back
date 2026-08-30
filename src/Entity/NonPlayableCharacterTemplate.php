@@ -51,18 +51,21 @@ class NonPlayableCharacterTemplate extends Encyclopedia
     #[ORM\JoinTable(name: 'non_playable_character_templates_spells')]
     #[ORM\JoinColumn(name: 'non_playable_character_template_id', referencedColumnName: 'id', onDelete: 'cascade')]
     #[ORM\InverseJoinColumn(name: 'spell_id', referencedColumnName: 'id', onDelete: 'cascade')]
+    /** @var Collection<int, Spell> */
     #[ORM\ManyToMany(targetEntity: Spell::class)]
-    private Collection|array $spells;
+    private Collection $spells;
     #[ORM\JoinTable(name: 'non_playable_character_templates_items')]
     #[ORM\JoinColumn(name: 'non_playable_character_template_id', referencedColumnName: 'id', onDelete: 'cascade')]
     #[ORM\InverseJoinColumn(name: 'item_id', referencedColumnName: 'id', onDelete: 'cascade')]
+    /** @var Collection<int, Item> */
     #[ORM\ManyToMany(targetEntity: Item::class)]
-    private Collection|array $items;
+    private Collection $items;
     #[ORM\JoinTable(name: 'non_playable_character_templates_skills')]
     #[ORM\JoinColumn(name: 'non_playable_character_template_id', referencedColumnName: 'id', onDelete: 'cascade')]
     #[ORM\InverseJoinColumn(name: 'skill_id', referencedColumnName: 'id', onDelete: 'cascade')]
+    /** @var Collection<int, Skill> */
     #[ORM\ManyToMany(targetEntity: Skill::class)]
-    private Collection|array $skills;
+    private Collection $skills;
 
     public function __construct()
     {
@@ -97,15 +100,18 @@ class NonPlayableCharacterTemplate extends Encyclopedia
         return $this;
     }
 
-    public function getSpells(): Collection|array
+    /**
+     * @return Collection<int, Spell>
+     */
+    public function getSpells(): Collection
     {
         return $this->spells;
     }
 
-    /** @param Spell[] $spells */
+    /** @param Collection<int, Spell>|Spell[] $spells */
     public function setSpells(Collection|array $spells): NonPlayableCharacterTemplate
     {
-        $this->spells = $spells;
+        $this->spells = $spells instanceof Collection ? $spells : new ArrayCollection($spells);
 
         return $this;
     }
@@ -128,15 +134,18 @@ class NonPlayableCharacterTemplate extends Encyclopedia
         return $this;
     }
 
-    public function getItems(): Collection|array
+    /**
+     * @return Collection<int, Item>
+     */
+    public function getItems(): Collection
     {
         return $this->items;
     }
 
-    /** @param Item[] $items */
+    /** @param Collection<int, Item>|Item[] $items */
     public function setItems(Collection|array $items): NonPlayableCharacterTemplate
     {
-        $this->items = $items;
+        $this->items = $items instanceof Collection ? $items : new ArrayCollection($items);
 
         return $this;
     }
@@ -159,15 +168,18 @@ class NonPlayableCharacterTemplate extends Encyclopedia
         return $this;
     }
 
-    public function getSkills(): Collection|array
+    /**
+     * @return Collection<int, Skill>
+     */
+    public function getSkills(): Collection
     {
         return $this->skills;
     }
 
-    /** @param Skill[] $skills */
+    /** @param Collection<int, Skill>|Skill[] $skills */
     public function setSkills(Collection|array $skills): NonPlayableCharacterTemplate
     {
-        $this->skills = $skills;
+        $this->skills = $skills instanceof Collection ? $skills : new ArrayCollection($skills);
 
         return $this;
     }

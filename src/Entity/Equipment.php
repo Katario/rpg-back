@@ -175,7 +175,10 @@ abstract class Equipment
         return $this;
     }
 
-    public function getSkills(): Collection|array
+    /**
+     * @return Collection<int, Skill>
+     */
+    public function getSkills(): Collection
     {
         return $this->skills;
     }
@@ -198,7 +201,20 @@ abstract class Equipment
         return $this;
     }
 
-    public function getSpells(): Collection|array
+    /**
+     * @param Collection<int, Skill>|Skill[] $skills
+     */
+    public function setSkills(Collection|array $skills): static
+    {
+        $this->skills = $skills instanceof Collection ? $skills : new ArrayCollection($skills);
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Spell>
+     */
+    public function getSpells(): Collection
     {
         return $this->spells;
     }
@@ -217,6 +233,16 @@ abstract class Equipment
         if ($this->getSpells()->contains($spell)) {
             $this->spells->removeElement($spell);
         }
+
+        return $this;
+    }
+
+    /**
+     * @param Collection<int, Spell>|Spell[] $spells
+     */
+    public function setSpells(Collection|array $spells): static
+    {
+        $this->spells = $spells instanceof Collection ? $spells : new ArrayCollection($spells);
 
         return $this;
     }

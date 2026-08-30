@@ -4,7 +4,7 @@
 
 The JSON API is public (no user authentication) under `/api/*`. CORS is configured via `config/packages/nelmio_cors.yaml` using the `CORS_ALLOW_ORIGIN` env var.
 
-Players identify their character using a `token` (hex string generated on import). All character-scoped routes use `{token}` as the identifier.
+Players identify their character using a `token` (hex string generated on character creation). All character-scoped routes use `{token}` as the identifier.
 
 ## Routes
 
@@ -12,15 +12,16 @@ Players identify their character using a `token` (hex string generated on import
 
 | Method | Route | Description |
 |---|---|---|
-| `POST` | `/api/characters/import` | Import a character from JSON. Returns the full character payload (same shape as `GET /api/characters/{token}`) with status `201`. |
 | `GET` | `/api/characters/{token}` | Get full character sheet |
 | `PATCH` | `/api/characters/{token}/stats` | Update current stat values |
 | `POST` | `/api/characters/{token}/level-up` | Level up |
 | `DELETE` | `/api/characters/{token}` | Delete character |
 | `POST` | `/api/characters/{token}/avatar` | Upload avatar image (multipart) |
 | `DELETE` | `/api/characters/{token}/avatar` | Remove avatar image |
+| `POST` | `/api/characters/{token}/skills` | Attach an encyclopedia skill to the character |
+| `DELETE` | `/api/characters/{token}/skills/{skillId}` | Detach a skill from the character |
 
-The character payload (returned by `GET /api/characters/{token}` and `POST /api/characters/import`) includes:
+The character payload (returned by `GET /api/characters/{token}`) includes:
 
 - `weapons[].damageLines`, `armors[].damageLines`, `skills[].damageLines`, `spells[].damageLines` — raw array of damage line objects: `{ diceCount, diceFaces, fixedAmount, type, element }` (see `docs/damage.md`).
 - `spells[].type` — `"active"` or `"passive"`.
@@ -77,21 +78,110 @@ Response `201 Created` returns the persisted weapon (resp. armor), including `da
 
 Armors follow the same payload shape **without** the top-level `damageLines` (armors only carry skills, not direct damage).
 
+### Skills (encyclopedia)
+
+| Method | Route | Description |
+|---|---|---|
+| `GET` | `/api/skills` | List every encyclopedia skill |
+
+Skills are shared across all games and characters (encyclopedia entries — see `docs/encyclopedia.md`). They are created in back-office; the JSON API only exposes them for read and for attachment to a character.
+
+Response `200 OK` is an array of skill objects, each shaped like a `skills[]` entry in the character payload:
+
+```json
+[
+  {
+    "id": 42,
+    "name": "Heavy Strike",
+    "description": "A targeted blow aimed at the enemy's weak point.",
+    "exhaustPointCost": 2,
+    "actionPointCost": 1,
+    "damageLines": [
+      { "diceCount": 2, "diceFaces": 6, "fixedAmount": 3, "type": "physical", "element": null }
+    ],
+    "isPassive": false
+  }
+]
+```
+
+#### Attach / detach a skill on a character
+
+```json
+// POST /api/characters/{token}/skills
+{ "skillId": 42 }
+```
+
+Response `201 Created` — the attached skill, same shape as above.
+
+Errors:
+- `400 Bad Request` — `skillId` missing.
+- `404 Not Found` — character token unknown, or skill id unknown.
+- `409 Conflict` — skill already attached to this character.
+
+```http
+DELETE /api/characters/{token}/skills/{skillId}
+```
+
+Response `204 No Content`. Returns `404 Not Found` if the skill is unknown **or** not attached to this character (the two cases are unified — same outcome for the caller).
+
 ### Items
 
-| Method | Route | Description | Response |
-|---|---|---|---|
-| `POST` | `/api/characters/{token}/items` | Add item to character | `{ id, quantity, currentLoadPoints }` |
-| `PATCH` | `/api/characters/{token}/items/{itemId}` | Update quantity (`quantity` required) | `{ currentLoadPoints }` |
-| `DELETE` | `/api/characters/{token}/items/{itemId}` | Remove item | `{ currentLoadPoints }` |
+| Method | Route | Description |
+|---|---|---|
+| `GET` | `/api/items` | List every encyclopedia item |
+| `POST` | `/api/characters/{token}/items` | Attach an encyclopedia item to the character |
+| `PATCH` | `/api/characters/{token}/items/{itemId}` | Update quantity (`quantity` required) |
+| `DELETE` | `/api/characters/{token}/items/{itemId}` | Remove item from character |
 
-`currentLoadPoints` is returned in grams after every inventory mutation so the front can update the load bar without a full character reload.
+Items are encyclopedia entries (see `docs/encyclopedia.md`) — `weight`, `description`, `value` are properties of the shared item, not of a single character's instance. Creation of new items happens in the back-office; the JSON API only exposes them for read and for attachment.
+
+#### `GET /api/items`
+
+Response `200 OK` — array of items:
+
+```json
+[
+  { "id": 7, "name": "Health Potion", "description": "Restores 20 HP.", "weight": 500, "value": 10 }
+]
+```
+
+`weight` is in grams (cf. `docs/encyclopedia.md` and the front's `displayWeight` helper which converts to kg).
+
+#### `POST /api/characters/{token}/items`
+
+```json
+{ "itemId": 7, "quantity": 3 }
+```
+
+`quantity` is optional and defaults to `1`. Values below `1` are clamped to `1`.
+
+Response `201 Created` — the attached item, augmented with `quantity` and `currentLoadPoints` (grams):
+
+```json
+{
+  "id": 7,
+  "name": "Health Potion",
+  "description": "Restores 20 HP.",
+  "weight": 500,
+  "value": 10,
+  "quantity": 3,
+  "currentLoadPoints": 1500
+}
+```
+
+Errors:
+- `400 Bad Request` — `itemId` missing.
+- `404 Not Found` — character token unknown, or item id unknown.
+- `409 Conflict` — item already attached to this character. Use `PATCH .../items/{itemId}` to change the quantity instead.
+
+#### `PATCH /api/characters/{token}/items/{itemId}` & `DELETE`
+
+Unchanged. Both return `{ currentLoadPoints }` (and `quantity` for PATCH) — `currentLoadPoints` lets the front update the load bar without reloading the character.
 
 ### Talents
 
 | Method | Route | Description |
 |---|---|---|
-| `POST` | `/api/talents/import` | Bulk import talents with TalentLevels |
 | `GET` | `/api/characters/{token}/talents/{talentId}/levels` | Get unlocked TalentLevels for a talent |
 
 ### Misc

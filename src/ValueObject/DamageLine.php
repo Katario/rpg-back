@@ -15,8 +15,12 @@ class DamageLine
         private int $fixedAmount = 0,
         private DamageTypeEnum $type = DamageTypeEnum::PHYSICAL,
         private ?ElementEnum $element = null,
-    ) {}
+    ) {
+    }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     public static function fromArray(array $data): self
     {
         return new self(
@@ -28,14 +32,17 @@ class DamageLine
         );
     }
 
+    /**
+     * @return array<string, int|string|null>
+     */
     public function toArray(): array
     {
         return [
-            'diceCount'   => $this->diceCount,
-            'diceFaces'   => $this->diceFaces,
+            'diceCount' => $this->diceCount,
+            'diceFaces' => $this->diceFaces,
             'fixedAmount' => $this->fixedAmount,
-            'type'        => $this->type->value,
-            'element'     => $this->element?->value,
+            'type' => $this->type->value,
+            'element' => $this->element?->value,
         ];
     }
 

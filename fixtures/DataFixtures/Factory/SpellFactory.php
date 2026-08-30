@@ -27,7 +27,7 @@ final class SpellFactory extends PersistentProxyObjectFactory
     /**
      * @see https://symfony.com/bundles/ZenstruckFoundryBundle/current/index.html#model-factories
      *
-     * @return array<bool|\DateTimeImmutable|int|string>
+     * @return array<string, mixed>
      */
     protected function defaults(): array
     {
@@ -38,7 +38,7 @@ final class SpellFactory extends PersistentProxyObjectFactory
             'isReady' => self::faker()->boolean(),
             'manaCost' => self::faker()->numberBetween(10, 100),
             'actionPointCost' => self::faker()->randomNumber(),
-            'diceValue' => self::faker()->randomElement(['2d6', '1d12', '3d4 + 1']),
+            'damageLines' => [],
             'name' => self::faker()->text(),
             'updatedAt' => \DateTimeImmutable::createFromMutable(self::faker()->dateTime()),
         ];

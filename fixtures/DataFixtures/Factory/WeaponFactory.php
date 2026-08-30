@@ -20,19 +20,18 @@ final class WeaponFactory extends PersistentProxyObjectFactory
     }
 
     /**
-     * @return array<bool|\DateTimeImmutable|int|string>
+     * @return array<string, mixed>
      */
     protected function defaults(): array
     {
         return [
             'currentDurabilityPoints' => self::faker()->numberBetween(1, 10),
-            'description'             => self::faker()->text(),
-            'maxDurabilityPoints'     => self::faker()->numberBetween(11, 20),
-            'name'                    => self::faker()->text(50),
-            'value'                   => self::faker()->numberBetween(1, 10000),
-            'weight'                  => self::faker()->numberBetween(1, 20),
-            'damageDice'              => [],
-            'damageBonus'             => 0,
+            'description' => self::faker()->text(),
+            'maxDurabilityPoints' => self::faker()->numberBetween(11, 20),
+            'name' => self::faker()->text(50),
+            'value' => self::faker()->numberBetween(1, 10000),
+            'weight' => self::faker()->numberBetween(1, 20),
+            'damageLines' => [],
         ];
     }
 

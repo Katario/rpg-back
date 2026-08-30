@@ -17,8 +17,8 @@
 - `CharacterTemplate`
 - `NonPlayableCharacterTemplate`
 
-## Implication for imports
+## Implication
 
-When importing a character, encyclopedia entries are **looked up by name** and reused if they exist. They are never duplicated. A `Skill` named "Tir" created during one character's import will be reused for the next character with the same attack.
+When an entity references an encyclopedia entry (e.g. attaching a `Skill` to a weapon), the entry is **looked up by name** and reused if it exists. Entries are never duplicated. A `Skill` named "Tir" reused for the next weapon with the same attack.
 
 This means editing an encyclopedia entry (e.g. changing a Skill's damage) affects **all characters** that reference it.

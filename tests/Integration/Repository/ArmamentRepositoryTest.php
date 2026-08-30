@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Tests\Integration\Repository;
 
 use App\Enum\BeingEnum;
-use App\Fixtures\DataFixtures\Factory\ArmamentFactory;
 use App\Fixtures\DataFixtures\Factory\GameFactory;
+use App\Fixtures\DataFixtures\Factory\WeaponFactory;
 use App\Repository\EquipmentRepository;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -27,7 +27,7 @@ class ArmamentRepositoryTest extends KernelTestCase
         self::bootKernel();
 
         $game = GameFactory::createOne();
-        ArmamentFactory::createOne([
+        WeaponFactory::createOne([
             'game' => $game,
         ]);
 

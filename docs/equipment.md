@@ -18,17 +18,17 @@ All weights are stored in **grams** (int). Never store floats.
 | 20 kg armor | `20000` |
 | 0.1 kg ration | `100` |
 
-The front is responsible for display conversion. The JSON import multiplies source values by 1000.
+The front is responsible for display conversion.
 
 ## Skills as Attacks
 
 Weapon attacks are modelled as `Skill` entities linked to the weapon via the `equipments_skills` join table. Each skill has:
 - `name` — the attack name (e.g. "Tir", "TAPER")
-- `exhaustPointCost` — FA cost (`faCost` in import JSON)
-- `actionPointCost` — PA cost (`paCost` in import JSON)
-- `damageLines` — parsed from the attack's `damage` string on import
+- `exhaustPointCost` — FA cost
+- `actionPointCost` — PA cost
+- `damageLines` — the attack's damage (see `docs/damage.md`)
 
-Skills are **encyclopedia entries** (shared globally). On import, an existing skill with the same name is reused and linked to the new weapon — not duplicated.
+Skills are **encyclopedia entries** (shared globally). When a skill is attached to a weapon, an existing skill with the same name is reused — not duplicated.
 
 ## Damage Lines
 

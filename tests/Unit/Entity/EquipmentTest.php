@@ -8,6 +8,7 @@ use App\Entity\Character;
 use App\Entity\Equipment;
 use App\Entity\Monster;
 use App\Entity\NonPlayableCharacter;
+use App\Entity\Weapon;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -16,7 +17,7 @@ class EquipmentTest extends TestCase
 {
     public function testReturnFullNameIfOwnerIsAMonster(): void
     {
-        $armament = new Equipment();
+        $armament = new Weapon();
 
         $monster = new Monster();
         $monster->setName('Little Goblin');
@@ -28,7 +29,7 @@ class EquipmentTest extends TestCase
 
     public function testReturnFullNameIfOwnerIsACharacter(): void
     {
-        $armament = new Equipment();
+        $armament = new Weapon();
 
         $character = new Character();
 
@@ -42,7 +43,7 @@ class EquipmentTest extends TestCase
 
     public function testReturnFullNameIfOwnerIsANonPlayableCharacter(): void
     {
-        $armament = new Equipment();
+        $armament = new Weapon();
 
         $nonPlayableCharacter = new NonPlayableCharacter();
 
@@ -56,14 +57,14 @@ class EquipmentTest extends TestCase
 
     public function testReturnFullNameIfNoOwner(): void
     {
-        $armament = new Equipment();
+        $armament = new Weapon();
 
         self::assertNull($armament->getOwnerName());
     }
 
     public function testIsOwnedWhenBeingIsSet(): void
     {
-        $armament = new Equipment();
+        $armament = new Weapon();
         $character = new Character();
         $armament->setBeing($character);
 
@@ -73,7 +74,7 @@ class EquipmentTest extends TestCase
 
     public function testIsNotOwnedWhenBeingIsNull(): void
     {
-        $armament = new Equipment();
+        $armament = new Weapon();
 
         self::assertNull($armament->getBeing());
         self::assertFalse($armament->isOwned());

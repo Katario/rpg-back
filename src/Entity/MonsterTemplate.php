@@ -48,20 +48,23 @@ class MonsterTemplate extends Encyclopedia
     #[ORM\JoinTable(name: 'monster_templates_spells')]
     #[ORM\JoinColumn(name: 'monster_template_id', referencedColumnName: 'id', onDelete: 'cascade')]
     #[ORM\InverseJoinColumn(name: 'spell_id', referencedColumnName: 'id', onDelete: 'cascade')]
+    /** @var Collection<int, Spell> */
     #[ORM\ManyToMany(targetEntity: Spell::class)]
-    private Collection|array $spells;
+    private Collection $spells;
 
     #[ORM\JoinTable(name: 'monster_templates_items')]
     #[ORM\JoinColumn(name: 'monster_templates_id', referencedColumnName: 'id', onDelete: 'cascade')]
     #[ORM\InverseJoinColumn(name: 'item_id', referencedColumnName: 'id', onDelete: 'cascade')]
+    /** @var Collection<int, Item> */
     #[ORM\ManyToMany(targetEntity: Item::class)]
-    private Collection|array $items;
+    private Collection $items;
 
     #[ORM\JoinTable(name: 'monster_templates_skills')]
     #[ORM\JoinColumn(name: 'monster_template_id', referencedColumnName: 'id', onDelete: 'cascade')]
     #[ORM\InverseJoinColumn(name: 'skill_id', referencedColumnName: 'id', onDelete: 'cascade')]
+    /** @var Collection<int, Skill> */
     #[ORM\ManyToMany(targetEntity: Skill::class)]
-    private Collection|array $skills;
+    private Collection $skills;
 
     public function __construct()
     {
@@ -95,15 +98,18 @@ class MonsterTemplate extends Encyclopedia
         return $this;
     }
 
-    public function getSpells(): Collection|array
+    /**
+     * @return Collection<int, Spell>
+     */
+    public function getSpells(): Collection
     {
         return $this->spells;
     }
 
-    /** @param Spell[] $spells */
+    /** @param Collection<int, Spell>|Spell[] $spells */
     public function setSpells(Collection|array $spells): MonsterTemplate
     {
-        $this->spells = $spells;
+        $this->spells = $spells instanceof Collection ? $spells : new ArrayCollection($spells);
 
         return $this;
     }
@@ -126,15 +132,18 @@ class MonsterTemplate extends Encyclopedia
         return $this;
     }
 
-    public function getItems(): Collection|array
+    /**
+     * @return Collection<int, Item>
+     */
+    public function getItems(): Collection
     {
         return $this->items;
     }
 
-    /** @param Item[] $items */
+    /** @param Collection<int, Item>|Item[] $items */
     public function setItems(Collection|array $items): MonsterTemplate
     {
-        $this->items = $items;
+        $this->items = $items instanceof Collection ? $items : new ArrayCollection($items);
 
         return $this;
     }
@@ -157,15 +166,18 @@ class MonsterTemplate extends Encyclopedia
         return $this;
     }
 
-    public function getSkills(): Collection|array
+    /**
+     * @return Collection<int, Skill>
+     */
+    public function getSkills(): Collection
     {
         return $this->skills;
     }
 
-    /** @param Skill[] $skills */
+    /** @param Collection<int, Skill>|Skill[] $skills */
     public function setSkills(Collection|array $skills): MonsterTemplate
     {
-        $this->skills = $skills;
+        $this->skills = $skills instanceof Collection ? $skills : new ArrayCollection($skills);
 
         return $this;
     }

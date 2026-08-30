@@ -47,14 +47,16 @@ class EquipmentTemplate extends Encyclopedia
     #[ORM\JoinTable(name: 'equipment_templates_skills')]
     #[ORM\JoinColumn(name: 'equipment_template_id', referencedColumnName: 'id')]
     #[ORM\InverseJoinColumn(name: 'skill_id', referencedColumnName: 'id')]
+    /** @var Collection<int, Skill> */
     #[ORM\ManyToMany(targetEntity: Skill::class)]
-    private Collection|array $skills;
+    private Collection $skills;
 
     #[ORM\JoinTable(name: 'equipment_templates_spells')]
     #[ORM\JoinColumn(name: 'equipment_template_id', referencedColumnName: 'id')]
     #[ORM\InverseJoinColumn(name: 'spell_id', referencedColumnName: 'id')]
+    /** @var Collection<int, Spell> */
     #[ORM\ManyToMany(targetEntity: Spell::class)]
-    private Collection|array $spells;
+    private Collection $spells;
 
     public function __construct()
     {
@@ -151,15 +153,18 @@ class EquipmentTemplate extends Encyclopedia
         return $this;
     }
 
-    public function getSkills(): Collection|array
+    /**
+     * @return Collection<int, Skill>
+     */
+    public function getSkills(): Collection
     {
         return $this->skills;
     }
 
-    /** @param Skill[] $skills */
+    /** @param Collection<int, Skill>|Skill[] $skills */
     public function setSkills(Collection|array $skills): EquipmentTemplate
     {
-        $this->skills = $skills;
+        $this->skills = $skills instanceof Collection ? $skills : new ArrayCollection($skills);
 
         return $this;
     }
@@ -182,15 +187,18 @@ class EquipmentTemplate extends Encyclopedia
         return $this;
     }
 
-    public function getSpells(): Collection|array
+    /**
+     * @return Collection<int, Spell>
+     */
+    public function getSpells(): Collection
     {
         return $this->spells;
     }
 
-    /** @param Spell[] $spells */
+    /** @param Collection<int, Spell>|Spell[] $spells */
     public function setSpells(Collection|array $spells): EquipmentTemplate
     {
-        $this->spells = $spells;
+        $this->spells = $spells instanceof Collection ? $spells : new ArrayCollection($spells);
 
         return $this;
     }

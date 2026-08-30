@@ -24,7 +24,7 @@ abstract class Encyclopedia
         return $this->isReady;
     }
 
-    public function setIsReady(bool $isReady): Encyclopedia
+    public function setIsReady(bool $isReady): static
     {
         $this->isReady = $isReady;
 
@@ -36,7 +36,7 @@ abstract class Encyclopedia
         return $this->isPrivate;
     }
 
-    public function setIsPrivate(bool $isPrivate): Encyclopedia
+    public function setIsPrivate(bool $isPrivate): static
     {
         $this->isPrivate = $isPrivate;
 
@@ -48,7 +48,7 @@ abstract class Encyclopedia
         return $this->createdBy;
     }
 
-    public function setCreatedBy(?User $createdBy): Encyclopedia
+    public function setCreatedBy(?User $createdBy): static
     {
         $this->createdBy = $createdBy;
 
