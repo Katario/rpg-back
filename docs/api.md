@@ -12,7 +12,7 @@ Players identify their character using a `token` (hex string generated on charac
 
 | Method | Route | Description |
 |---|---|---|
-| `GET` | `/api/characters/{token}` | Get full character sheet |
+| `GET` | `/api/characters/{token}` | Get full character sheet. Returns `422` if the character has no kind. |
 | `PATCH` | `/api/characters/{token}/stats` | Update current stat values |
 | `POST` | `/api/characters/{token}/level-up` | Level up |
 | `DELETE` | `/api/characters/{token}` | Delete character |
@@ -23,6 +23,7 @@ Players identify their character using a `token` (hex string generated on charac
 
 The character payload (returned by `GET /api/characters/{token}`) includes:
 
+- `kind` — always a non-null object (`{ id, name, bonuses }`). A character **must have a kind** (race); `GET` returns `422 Unprocessable Entity` for a character without one. `characterClass`, by contrast, may be `null`.
 - `weapons[].damageLines`, `armors[].damageLines`, `skills[].damageLines`, `spells[].damageLines` — raw array of damage line objects: `{ diceCount, diceFaces, fixedAmount, type, element }` (see `docs/damage.md`).
 - `spells[].type` — `"active"` or `"passive"`.
 - `skills[].isPassive`, `spells[].isPassive` — `true` when the entry has no `damageLines`. Currently derived on the fly; will be backed by a persisted column in an upcoming migration.

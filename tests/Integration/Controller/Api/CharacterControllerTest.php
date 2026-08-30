@@ -82,7 +82,28 @@ class CharacterControllerTest extends WebTestCase
         self::assertSame([], $data['talents']);
     }
 
-    public function testShowReturnsNullKindAndClassWhenNotSet(): void
+    public function testShowReturnsNullClassWhenNotSet(): void
+    {
+        $client = static::createClient();
+
+        $game = GameFactory::createOne();
+        $kind = KindFactory::createOne(['name' => 'Human']);
+        CharacterFactory::createOne([
+            'game' => $game,
+            'token' => 'no-class-token',
+            'kind' => $kind,
+        ]);
+        $client->request('GET', '/api/characters/no-class-token');
+
+        self::assertResponseIsSuccessful();
+
+        $data = json_decode((string) $client->getResponse()->getContent(), true);
+
+        self::assertSame('Human', $data['kind']['name']);
+        self::assertNull($data['characterClass']);
+    }
+
+    public function testShowReturns422WhenCharacterHasNoKind(): void
     {
         $client = static::createClient();
 
@@ -93,12 +114,7 @@ class CharacterControllerTest extends WebTestCase
         ]);
         $client->request('GET', '/api/characters/no-kind-token');
 
-        self::assertResponseIsSuccessful();
-
-        $data = json_decode((string) $client->getResponse()->getContent(), true);
-
-        self::assertNull($data['kind']);
-        self::assertNull($data['characterClass']);
+        self::assertResponseStatusCodeSame(422);
     }
 
     public function testShowReturnsRelatedCollections(): void
@@ -113,6 +129,7 @@ class CharacterControllerTest extends WebTestCase
         $character = CharacterFactory::createOne([
             'game' => $game,
             'token' => 'collections-token',
+            'kind' => KindFactory::createOne(),
             'spells' => [$spell],
             'skills' => [$skill],
         ]);
@@ -200,6 +217,7 @@ class CharacterControllerTest extends WebTestCase
         $character = CharacterFactory::createOne([
             'game' => $game,
             'token' => 'is-passive-token',
+            'kind' => KindFactory::createOne(),
             'skills' => [$passiveSkill, $activeSkill],
             'spells' => [$passiveSpell, $activeSpell],
         ]);
@@ -407,7 +425,7 @@ class CharacterControllerTest extends WebTestCase
         $client = static::createClient();
 
         $game = GameFactory::createOne();
-        CharacterFactory::createOne(['game' => $game, 'token' => 'delete-avatar-token']);
+        CharacterFactory::createOne(['game' => $game, 'token' => 'delete-avatar-token', 'kind' => KindFactory::createOne()]);
 
         $client->request(
             'POST',

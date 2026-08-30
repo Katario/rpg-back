@@ -7,6 +7,7 @@ namespace App\Tests\Integration\Controller\Api;
 use App\Controller\Api\WeaponController;
 use App\Fixtures\DataFixtures\Factory\CharacterFactory;
 use App\Fixtures\DataFixtures\Factory\GameFactory;
+use App\Fixtures\DataFixtures\Factory\KindFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Zenstruck\Foundry\Test\Factories;
@@ -82,6 +83,7 @@ class WeaponControllerTest extends WebTestCase
         CharacterFactory::createOne([
             'game' => $game,
             'token' => 'patch-token',
+            'kind' => KindFactory::createOne(),
         ]);
 
         $client->request(

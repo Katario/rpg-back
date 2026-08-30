@@ -37,6 +37,10 @@ class CharacterController extends AbstractController
             return $this->json(['error' => 'Character not found'], Response::HTTP_NOT_FOUND);
         }
 
+        if (!$character->getKind()) {
+            return $this->json(['error' => 'Character has no kind'], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
         return $this->json($this->serializeCharacter($character, $request, $loadCalculator));
     }
 
