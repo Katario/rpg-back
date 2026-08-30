@@ -44,18 +44,34 @@ class ItemController extends AbstractController
 
         $body = json_decode($request->getContent(), true);
 
-        if (empty($body['itemId'])) {
-            return $this->json(['error' => 'Field "itemId" is required'], Response::HTTP_BAD_REQUEST);
+        if (!is_array($body)) {
+            return $this->json(['error' => 'Invalid JSON body'], Response::HTTP_BAD_REQUEST);
         }
 
-        $item = $itemRepository->find((int) $body['itemId']);
+        if (!empty($body['itemId'])) {
+            // Attach an existing encyclopedia item.
+            $item = $itemRepository->find((int) $body['itemId']);
 
-        if (!$item) {
-            return $this->json(['error' => 'Item not found'], Response::HTTP_NOT_FOUND);
-        }
+            if (!$item) {
+                return $this->json(['error' => 'Item not found'], Response::HTTP_NOT_FOUND);
+            }
 
-        if ($beingItemRepository->findOneByBeingAndItem($character, $item)) {
-            return $this->json(['error' => 'Item already attached'], Response::HTTP_CONFLICT);
+            if ($beingItemRepository->findOneByBeingAndItem($character, $item)) {
+                return $this->json(['error' => 'Item already attached'], Response::HTTP_CONFLICT);
+            }
+        } elseif (!empty($body['name'])) {
+            // Create a brand-new item with the provided weight (grams). No lookup-by-name
+            // reuse here: reusing an existing entry would silently ignore the submitted weight.
+            $item = (new Item())
+                ->setName((string) $body['name'])
+                ->setDescription(isset($body['description']) ? (string) $body['description'] : '')
+                ->setWeight(isset($body['weight']) ? (int) $body['weight'] : 0)
+                ->setValue(0)
+                ->setIsReady(true)
+                ->setIsPrivate(false);
+            $itemRepository->save($item);
+        } else {
+            return $this->json(['error' => 'Field "itemId" or "name" is required'], Response::HTTP_BAD_REQUEST);
         }
 
         $quantity = isset($body['quantity']) ? max(1, (int) $body['quantity']) : 1;

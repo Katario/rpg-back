@@ -150,13 +150,21 @@ Response `200 OK` — array of items:
 
 #### `POST /api/characters/{token}/items`
 
-```json
-{ "itemId": 7, "quantity": 3 }
-```
+Two modes, chosen by the body:
+
+- **Attach an existing item** — provide `itemId`:
+  ```json
+  { "itemId": 7, "quantity": 3 }
+  ```
+- **Create a new item and attach it** — provide `name` (and optionally `weight` in grams, `description`):
+  ```json
+  { "name": "Handmade Sword", "weight": 1500, "description": "Forged by the player", "quantity": 2 }
+  ```
+  A brand-new `Item` is created with the submitted `weight` (grams), `description`, and `value: 0`. It is **not** looked up by name — reusing an existing entry would silently ignore the submitted weight. `weight` defaults to `0`, `description` to `""`.
 
 `quantity` is optional and defaults to `1`. Values below `1` are clamped to `1`.
 
-Response `201 Created` — the attached item, augmented with `quantity` and `currentLoadPoints` (grams):
+Response `201 Created` (identical shape for both modes) — the item, augmented with `quantity` and `currentLoadPoints` (grams):
 
 ```json
 {
@@ -171,9 +179,9 @@ Response `201 Created` — the attached item, augmented with `quantity` and `cur
 ```
 
 Errors:
-- `400 Bad Request` — `itemId` missing.
-- `404 Not Found` — character token unknown, or item id unknown.
-- `409 Conflict` — item already attached to this character. Use `PATCH .../items/{itemId}` to change the quantity instead.
+- `400 Bad Request` — neither `itemId` nor `name` provided (or invalid JSON body).
+- `404 Not Found` — character token unknown, or `itemId` unknown.
+- `409 Conflict` — item already attached to this character (attach mode). Use `PATCH .../items/{itemId}` to change the quantity instead.
 
 #### `PATCH /api/characters/{token}/items/{itemId}` & `DELETE`
 
@@ -257,4 +265,4 @@ Errors:
 }
 ```
 
-Each stat increment is added directly to the stat, must be a multiple of that stat's unit, and the increments must total exactly **2 points** (see the unit table in `docs/character.md`). Note `maxLoadPoints` is stored in **grams**: 1 point = `1000` (1 kg), so `maxLoadPoints` must be a multiple of `1000`.
+Each stat increment is added directly to the stat, must be a multiple of that stat's unit, and the increments must total exactly **2 points** (see the unit table in `docs/character.md`). Note `maxLoadPoints` is stored in **grams**: 1 point = `10000` (10 kg), so `maxLoadPoints` must be a multiple of `10000`.

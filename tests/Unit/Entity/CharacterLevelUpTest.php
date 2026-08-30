@@ -13,7 +13,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(Character::class)]
 class CharacterLevelUpTest extends TestCase
 {
-    public function testLevelUpOnLoadAddsOneKilogramPerPoint(): void
+    public function testLevelUpOnLoadAddsTenKilogramsPerPoint(): void
     {
         $character = new Character();
         $character->setLevel(1);
@@ -22,18 +22,18 @@ class CharacterLevelUpTest extends TestCase
 
         $this->giveFiveTalents($character);
 
-        // 1 point on load (+1000 g = 1 kg) + 1 point on health (+1) = 2 points.
+        // 1 point on load (+10000 g = 10 kg) + 1 point on health (+1) = 2 points.
         $character->levelUp(
-            ['maxLoadPoints' => 1000, 'maxHealthPoints' => 1],
+            ['maxLoadPoints' => 10000, 'maxHealthPoints' => 1],
             ['T1', 'T2', 'T3', 'T4', 'T5'],
         );
 
-        self::assertSame(6000, $character->getMaxLoadPoints());
+        self::assertSame(15000, $character->getMaxLoadPoints());
         self::assertSame(11, $character->getMaxHealthPoints());
         self::assertSame(2, $character->getLevel());
     }
 
-    public function testLevelUpRejectsLoadIncrementNotMultipleOfOneKilogram(): void
+    public function testLevelUpRejectsLoadIncrementNotMultipleOfTenKilograms(): void
     {
         $character = new Character();
         $character->setMaxLoadPoints(5000);
@@ -41,9 +41,9 @@ class CharacterLevelUpTest extends TestCase
 
         $this->expectException(\InvalidArgumentException::class);
 
-        // 10 g is no longer a valid load increment (must be a multiple of 1000).
+        // 1000 g is no longer a valid load increment (must be a multiple of 10000 = 10 kg).
         $character->levelUp(
-            ['maxLoadPoints' => 10, 'maxHealthPoints' => 1],
+            ['maxLoadPoints' => 1000, 'maxHealthPoints' => 1],
             ['T1', 'T2', 'T3', 'T4', 'T5'],
         );
     }

@@ -137,4 +137,82 @@ class ItemControllerTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(404);
     }
+
+    public function testCreateItemWithNamePersistsSubmittedWeight(): void
+    {
+        $client = static::createClient();
+
+        $game = GameFactory::createOne();
+        CharacterFactory::createOne(['game' => $game, 'token' => 'create-item-token']);
+
+        $client->request(
+            'POST',
+            '/api/characters/create-item-token/items',
+            server: ['CONTENT_TYPE' => 'application/json'],
+            content: (string) json_encode([
+                'name' => 'Handmade Sword',
+                'weight' => 1500,
+                'description' => 'Forged by the player',
+                'quantity' => 2,
+            ]),
+        );
+
+        self::assertResponseStatusCodeSame(201);
+        $data = json_decode((string) $client->getResponse()->getContent(), true);
+        self::assertSame('Handmade Sword', $data['name']);
+        self::assertSame(1500, $data['weight']);
+        self::assertSame('Forged by the player', $data['description']);
+        self::assertSame(2, $data['quantity']);
+        self::assertArrayHasKey('currentLoadPoints', $data);
+
+        // Reload from the encyclopedia: the submitted weight must survive (not reset to 0).
+        $client->request('GET', '/api/items');
+        $items = json_decode((string) $client->getResponse()->getContent(), true);
+        $byName = [];
+        foreach ($items as $it) {
+            $byName[$it['name']] = $it;
+        }
+        self::assertArrayHasKey('Handmade Sword', $byName);
+        self::assertSame(1500, $byName['Handmade Sword']['weight']);
+    }
+
+    public function testCreateItemDoesNotReuseExistingEntryByName(): void
+    {
+        $client = static::createClient();
+
+        // A pre-existing encyclopedia item with the same name but a different weight.
+        ItemFactory::createOne(['name' => 'Potion', 'weight' => 100]);
+
+        $game = GameFactory::createOne();
+        CharacterFactory::createOne(['game' => $game, 'token' => 'create-dup-name-token']);
+
+        $client->request(
+            'POST',
+            '/api/characters/create-dup-name-token/items',
+            server: ['CONTENT_TYPE' => 'application/json'],
+            content: (string) json_encode(['name' => 'Potion', 'weight' => 750]),
+        );
+
+        self::assertResponseStatusCodeSame(201);
+        $data = json_decode((string) $client->getResponse()->getContent(), true);
+        // The submitted weight (750) is used — the pre-existing entry (100) is not reused.
+        self::assertSame(750, $data['weight']);
+    }
+
+    public function testAddReturnsBadRequestWhenNeitherItemIdNorNameProvided(): void
+    {
+        $client = static::createClient();
+
+        $game = GameFactory::createOne();
+        CharacterFactory::createOne(['game' => $game, 'token' => 'no-id-no-name-token']);
+
+        $client->request(
+            'POST',
+            '/api/characters/no-id-no-name-token/items',
+            server: ['CONTENT_TYPE' => 'application/json'],
+            content: (string) json_encode(['quantity' => 2]),
+        );
+
+        self::assertResponseStatusCodeSame(400);
+    }
 }
