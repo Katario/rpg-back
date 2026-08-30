@@ -6,11 +6,10 @@ namespace App\Repository;
 
 use App\Entity\Character;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepositoryInterface;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepositoryInterface<Character>
+ * @extends ServiceEntityRepository<Character>
  */
 class CharacterRepository extends ServiceEntityRepository
 {
