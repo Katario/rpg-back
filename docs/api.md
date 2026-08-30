@@ -256,3 +256,5 @@ Errors:
   "talents": ["Alchimie", "Précision", "Discrétion", "Mysticisme", "Athlétisme"]
 }
 ```
+
+Each stat increment is added directly to the stat, must be a multiple of that stat's unit, and the increments must total exactly **2 points** (see the unit table in `docs/character.md`). Note `maxLoadPoints` is stored in **grams**: 1 point = `1000` (1 kg), so `maxLoadPoints` must be a multiple of `1000`.
