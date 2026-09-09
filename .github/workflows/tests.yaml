@@ -32,6 +32,9 @@ jobs:
         with:
           php-version: '8.5'
           tools: composer:v2
+          # Aligné sur deploy.yml et l'image de dev : pcov (rapide) plutôt
+          # que le Xdebug installé par défaut. phpunit.xml.dist impose un driver.
+          coverage: pcov
 
       - name: Validate composer files
         run: composer validate

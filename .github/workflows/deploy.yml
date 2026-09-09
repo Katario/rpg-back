@@ -39,7 +39,9 @@ jobs:
           php-version: '8.5'
           extensions: pgsql, pdo_pgsql, gd, intl, bcmath, zip, exif, pcntl
           tools: composer:v2
-          coverage: none
+          # phpunit.xml.dist impose la couverture (requireCoverageMetadata + <coverage>),
+          # donc un driver est obligatoire, sinon "No tests executed!". pcov = rapide.
+          coverage: pcov
       - name: Cache Composer
         uses: actions/cache@v4
         with:
