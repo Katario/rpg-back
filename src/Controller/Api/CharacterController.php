@@ -4,13 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
-use App\Calculator\LoadCalculator;
-use App\Entity\Armor;
-use App\Entity\Character;
-use App\Entity\KindTalentBonus;
-use App\Entity\Weapon;
 use App\Repository\CharacterRepository;
-use App\ValueObject\DamageLine;
+use App\Serializer\CharacterSerializer;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -29,7 +24,7 @@ class CharacterController extends AbstractController
     private const string AVATAR_MAX_SIZE = '5M';
 
     #[Route('/characters/{token}', name: 'api_character_show', methods: ['GET'])]
-    public function show(string $token, Request $request, CharacterRepository $characterRepository, LoadCalculator $loadCalculator): JsonResponse
+    public function show(string $token, Request $request, CharacterRepository $characterRepository, CharacterSerializer $characterSerializer): JsonResponse
     {
         $character = $characterRepository->findOneByToken($token);
 
@@ -41,181 +36,7 @@ class CharacterController extends AbstractController
             return $this->json(['error' => 'Character has no kind'], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        return $this->json($this->serializeCharacter($character, $request, $loadCalculator));
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function serializeCharacter(Character $character, Request $request, LoadCalculator $loadCalculator): array
-    {
-        $kind = $character->getKind();
-        $characterClass = $character->getCharacterClass();
-
-        $serializeDamageLines = fn ($entity) => array_map(
-            fn (DamageLine $line) => $line->toArray(),
-            $entity->getDamageLines(),
-        );
-
-        $serializeSkill = fn ($skill) => [
-            'id' => $skill->getId(),
-            'name' => $skill->getName(),
-            'description' => $skill->getDescription(),
-            'exhaustPointCost' => $skill->getExhaustPointCost(),
-            'actionPointCost' => $skill->getActionPointCost(),
-            'damageLines' => $serializeDamageLines($skill),
-            'isPassive' => $skill->isPassive(),
-        ];
-
-        $serializeEquipment = fn ($equipment) => [
-            'id' => $equipment->getId(),
-            'name' => $equipment->getName(),
-            'value' => $equipment->getValue(),
-            'weight' => $equipment->getWeight(),
-            'currentDurabilityPoints' => $equipment->getCurrentDurabilityPoints(),
-            'maxDurabilityPoints' => $equipment->getMaxDurabilityPoints(),
-            'description' => $equipment->getDescription(),
-            'isEquipped' => $equipment->isEquipped(),
-            'damageLines' => $serializeDamageLines($equipment),
-            'skills' => array_map($serializeSkill, $equipment->getSkills()->toArray()),
-        ];
-
-        $allEquipments = $character->getEquipments()->toArray();
-
-        $weapons = array_map(
-            $serializeEquipment,
-            array_values(array_filter($allEquipments, fn ($e) => $e instanceof Weapon)),
-        );
-
-        $armors = array_map(
-            $serializeEquipment,
-            array_values(array_filter($allEquipments, fn ($e) => $e instanceof Armor)),
-        );
-
-        $spells = array_map(
-            fn ($spell) => [
-                'id' => $spell->getId(),
-                'name' => $spell->getName(),
-                'description' => $spell->getDescription(),
-                'school' => $spell->getSchool(),
-                'manaCost' => $spell->getManaCost(),
-                'actionPointCost' => $spell->getActionPointCost(),
-                'damageLines' => $serializeDamageLines($spell),
-                'range' => $spell->getRange(),
-                'impactZone' => $spell->getImpactZone(),
-                'duration' => $spell->getDuration(),
-                'type' => $spell->getType(),
-                'isPassive' => $spell->isPassive(),
-            ],
-            $character->getSpells()->toArray(),
-        );
-
-        $skills = array_map($serializeSkill, $character->getSkills()->toArray());
-
-        $talents = array_map(
-            function ($characterTalent) {
-                $value = $characterTalent->getValue();
-                $unlockedLevels = array_values(array_filter(
-                    $characterTalent->getTalent()->getTalentLevels()->toArray(),
-                    fn ($tl) => $tl->getRequiredPoints() <= $value,
-                ));
-
-                return [
-                    'name' => $characterTalent->getName(),
-                    'value' => $value,
-                    'talentLevels' => array_map(fn ($tl) => [
-                        'tier' => $tl->getTier()->value,
-                        'requiredPoints' => $tl->getRequiredPoints(),
-                        'description' => $tl->getDescription(),
-                    ], $unlockedLevels),
-                ];
-            },
-            $character->getTalents()->toArray(),
-        );
-
-        $items = array_map(
-            fn ($beingItem) => [
-                'id' => $beingItem->getItem()->getId(),
-                'name' => $beingItem->getItem()->getName(),
-                'description' => $beingItem->getItem()->getDescription(),
-                'value' => $beingItem->getItem()->getValue(),
-                'weight' => $beingItem->getItem()->getWeight(),
-                'quantity' => $beingItem->getQuantity(),
-            ],
-            $character->getItems()->toArray(),
-        );
-
-        $primaryTalents = array_map(
-            fn ($talent) => ['id' => $talent->getId(), 'name' => $talent->getName()],
-            $character->getPrimaryTalents()->toArray(),
-        );
-
-        $secondaryTalents = array_map(
-            fn ($talent) => ['id' => $talent->getId(), 'name' => $talent->getName()],
-            $character->getSecondaryTalents()->toArray(),
-        );
-
-        return [
-            'id' => $character->getId(),
-            'token' => $character->getToken(),
-            'name' => $character->getName(),
-            'lastName' => $character->getLastName(),
-            'level' => $character->getLevel(),
-            'health' => [
-                'current' => $character->getCurrentHealthPoints(),
-                'max' => $character->getMaxHealthPoints(),
-            ],
-            'mana' => [
-                'current' => $character->getCurrentManaPoints(),
-                'max' => $character->getMaxManaPoints(),
-            ],
-            'actionPoints' => [
-                'current' => $character->getCurrentActionPoints(),
-                'max' => $character->getMaxActionPoints(),
-            ],
-            'exhaustPoints' => [
-                'current' => $character->getCurrentExhaustPoints(),
-                'max' => $character->getMaxExhaustPoints(),
-            ],
-            'loadPoints' => [
-                'current' => $loadCalculator->computeCurrentLoadPoints($character),
-                'max' => $character->getMaxLoadPoints(),
-            ],
-            'mentalPoints' => [
-                'current' => $character->getCurrentMentalPoints(),
-                'max' => $character->getMaxMentalPoints(),
-            ],
-            'avatarUrl' => $character->getAvatarUrl()
-                ? $request->getSchemeAndHttpHost().$character->getAvatarUrl()
-                : null,
-            'kind' => $kind ? [
-                'id' => $kind->getId(),
-                'name' => $kind->getName(),
-                'bonuses' => array_map(
-                    function ($bonus) {
-                        if ($bonus instanceof KindTalentBonus) {
-                            return [
-                                'type' => 'talent',
-                                'talent' => ['id' => $bonus->getTalent()->getId(), 'name' => $bonus->getTalent()->getName()],
-                                'value' => $bonus->getValue(),
-                            ];
-                        }
-
-                        return null;
-                    },
-                    $kind->getBonuses()->toArray(),
-                ),
-            ] : null,
-            'characterClass' => $characterClass ? ['id' => $characterClass->getId(), 'name' => $characterClass->getName()] : null,
-            'weapons' => $weapons,
-            'armors' => $armors,
-            'items' => $items,
-            'spells' => $spells,
-            'skills' => $skills,
-            'talents' => $talents,
-            'primaryTalents' => $primaryTalents,
-            'secondaryTalents' => $secondaryTalents,
-        ];
+        return $this->json($characterSerializer->serialize($character, $request->getSchemeAndHttpHost()));
     }
 
     #[Route('/characters/{token}/level-up', name: 'api_character_level_up', methods: ['POST'])]

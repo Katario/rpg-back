@@ -34,6 +34,8 @@ phpunit-reports
 .idea/*
 docker/db
 TODO.md
+support/*
+public/uploads/avatars/*
 ###< Other ###
 
 ###> friendsofphp/php-cs-fixer ###
@@ -44,3 +46,4 @@ TODO.md
 ###> phpstan/phpstan ###
 phpstan.neon
 ###< phpstan/phpstan ###
+

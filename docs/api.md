@@ -13,6 +13,8 @@ Players identify their character using a `token` (hex string generated on charac
 | Method | Route | Description |
 |---|---|---|
 | `GET` | `/api/characters/{token}` | Get full character sheet. Returns `422` if the character has no kind. |
+| `GET` | `/api/characters/{token}/export` | Export the character sheet as JSON (same payload as the sheet endpoint). Returns `422` if the character has no kind. |
+| `POST` | `/api/characters/import` | Import a character from an export payload. Returns the created character (`201`), same shape as the sheet. |
 | `PATCH` | `/api/characters/{token}/stats` | Update current stat values |
 | `POST` | `/api/characters/{token}/level-up` | Level up |
 | `DELETE` | `/api/characters/{token}` | Delete character |
@@ -21,12 +23,34 @@ Players identify their character using a `token` (hex string generated on charac
 | `POST` | `/api/characters/{token}/skills` | Attach an encyclopedia skill to the character |
 | `DELETE` | `/api/characters/{token}/skills/{skillId}` | Detach a skill from the character |
 
-The character payload (returned by `GET /api/characters/{token}`) includes:
+The character payload (returned by `GET /api/characters/{token}` **and** `GET /api/characters/{token}/export`) is produced by a single service, `App\Serializer\CharacterSerializer` — the source of truth for the read model. Both endpoints delegate to it, so their payloads can never diverge; a new field is added in one place. It includes:
 
 - `kind` — always a non-null object (`{ id, name, bonuses }`). A character **must have a kind** (race); `GET` returns `422 Unprocessable Entity` for a character without one. `characterClass`, by contrast, may be `null`.
 - `weapons[].damageLines`, `armors[].damageLines`, `skills[].damageLines`, `spells[].damageLines` — raw array of damage line objects: `{ diceCount, diceFaces, fixedAmount, type, element }` (see `docs/damage.md`).
 - `spells[].type` — `"active"` or `"passive"`.
 - `skills[].isPassive`, `spells[].isPassive` — `true` when the entry has no `damageLines`. Currently derived on the fly; will be backed by a persisted column in an upcoming migration.
+- `talents[].talentLevels` — the levels **unlocked** by the character's `value` (`requiredPoints <= value`), what the sheet displays. `talents[].allTalentLevels` — **every** level of the talent, locked ones included, so an import can recreate the full encyclopedia entry.
+
+#### Import (inverse of export)
+
+`POST /api/characters/import` rebuilds a character from an **export payload** — it is the exact inverse of the serializer, handled by `App\Serializer\CharacterDeserializer` (co-located with the serializer so the mapping stays symmetric). Body:
+
+```json
+{ "gameId": 1, "data": { /* an export payload (a full character sheet) */ } }
+```
+
+- `gameId` is optional (defaults to `1`) — the target game for the imported character.
+- `data` is a sheet payload as returned by the export/sheet endpoint.
+
+Rules (a mirror of the read model, so `export → import → export` round-trips identically):
+
+- **Create-only**: if `data.token` already exists in the database → `409 Conflict`. The token is preserved (a re-import to a fresh database recreates the same character).
+- **Encyclopedia lookup-by-name**: `kind`, `characterClass`, `skills`, `spells`, `items`, `talents` are looked up by name and reused; only missing ones are created (never duplicated). A name repeated within the same payload (e.g. a talent in `kind.bonuses`, `talents` and `primaryTalents`, or a skill on a weapon and on the character) is created once and reused: the deserializer keeps a per-import map of the entries it resolved, since newly created ones are not flushed yet and repository lookups cannot see them.
+- **Talent levels**: a missing talent is recreated with `allTalentLevels` (falls back to `talentLevels` for older exports). An existing talent is reused as is — the payload's levels are ignored.
+- Weights are already in **grams** and damage is the structured `damageLines` shape — nothing is converted.
+- **`kind` is required** → `422` if absent; `400` if `data` is missing/invalid.
+- Non-reconstructable fields are ignored: entity `id`s (new instances / encyclopedia matches), `loadPoints.current` (computed), `avatarUrl` (the file does not exist on the target).
+- Response `201 Created` — the created character, serialized via `CharacterSerializer` (so the response is itself an export).
 
 ### Weapons & Armors
 
