@@ -16,8 +16,9 @@
             class="flex flex-col md:flex-row flex-wrap"
         >
             <div class="md:basis-1/3">
-                <label for="username">Username:</label>
-                <input type="text" id="username" name="_username" value="{{ last_username }}" required />
+                <label for="email">Email:</label>
+                {# "_username" is the form_login parameter name; it carries the email. #}
+                <input type="email" id="email" name="_username" value="{{ last_username }}" autocomplete="email" required />
             </div>
 
             <div class="md:basis-1/3">

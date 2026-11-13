@@ -7,7 +7,7 @@
 
     <ul>
         <li>Nom : {{ character.name }}</li>
-        <li>Joueur : {{ character.user is not null ? character.user.username : '-' }}</li>
+        <li>Joueur : {{ character.user is not null ? character.user.displayName : '-' }}</li>
         <li>Classe : {{ character.characterClass.name }}</li>
         <li>Espece : {{ character.kind.name }}</li>
         <li>Niveau : {{ character.level }}</li>

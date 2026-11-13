@@ -82,7 +82,7 @@ class CharacterType extends AbstractType
             ])
             ->add('user', EntityType::class, [
                 'class' => User::class,
-                'choice_label' => 'username',
+                'choice_label' => 'displayName',
                 'query_builder' => function (UserRepository $userRepository) use ($options): QueryBuilder {
                     return $userRepository->getAvailableForNewCharacterUser(
                         $options['gameId'],
