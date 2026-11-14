@@ -23,3 +23,10 @@ The API authenticates users with **opaque access tokens** (Symfony `access_token
   and returns the plain token — the **only** time it is available. Lifetime: **30 days** (`ApiTokenManager::LIFETIME`), no refresh token: the user signs in again.
 - **Lookup**: `ApiTokenRepository::findOneByPlainToken()` hashes then queries; expiry is checked by the caller (`ApiToken::isExpired()`).
 - **Cleanup**: `ApiTokenRepository::deleteExpired()`.
+- **Authentication** (`App\Security\ApiTokenHandler`, firewall `api` in `security.yaml`, pattern `^/api/`, stateless):
+  reads `Authorization: Bearer <token>`, rejects unknown/expired tokens (`401` + `WWW-Authenticate`), refreshes
+  `lastUsedAt` at most every 5 minutes (no write on every request).
+  - No header → anonymous: the `access_control` for `^/api/` stays `PUBLIC_ACCESS`, so the public character-token
+    routes are unchanged. Protected routes declare `#[IsGranted('IS_AUTHENTICATED')]`.
+  - A sent token is always checked, even on public routes (no silent fallback to anonymous).
+- **Current user**: `GET /api/me`.

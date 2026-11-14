@@ -11,6 +11,15 @@ security:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
+        # Stateless API: users authenticate with "Authorization: Bearer <token>" (see docs/auth.md).
+        # Requests without the header stay anonymous, so the public token-based character routes
+        # keep working; protected routes use #[IsGranted].
+        api:
+            pattern: ^/api/
+            stateless: true
+            provider: app_user_provider
+            access_token:
+                token_handler: App\Security\ApiTokenHandler
         main:
             form_login:
                 login_path: sign_in

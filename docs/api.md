@@ -2,9 +2,18 @@
 
 ## Overview
 
-The JSON API is public (no user authentication) under `/api/*`. CORS is configured via `config/packages/nelmio_cors.yaml` using the `CORS_ALLOW_ORIGIN` env var.
+The JSON API lives under `/api/*`, on a **stateless** firewall. CORS is configured via `config/packages/nelmio_cors.yaml` using the `CORS_ALLOW_ORIGIN` env var (`Authorization` is an allowed header).
 
-Players identify their character using a `token` (hex string generated on character creation). All character-scoped routes use `{token}` as the identifier.
+Two ways to access it, side by side:
+
+- **Character token (public, legacy)** — players identify their character using a `token` (hex string generated on character creation). All character-scoped routes use `{token}` as the identifier and need no account. Kept until sheets are migrated to accounts.
+- **User access token** — `Authorization: Bearer <token>` for account routes (see `docs/auth.md`). A request **without** the header is anonymous; a request with an **invalid or expired** token gets `401` (with a `WWW-Authenticate` header), even on public routes — the client must drop its token and retry.
+
+### Account
+
+| Method | Route | Description |
+|---|---|---|
+| `GET` | `/api/me` | The authenticated user: `{ id, email, username, displayName, roles }`. `401` without a valid token. |
 
 ## Routes
 
