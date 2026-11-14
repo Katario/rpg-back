@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Entity\Game;
+use App\Entity\User;
 use App\Repository\GameRepository;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Twig\Environment;
 
 #[AsController]
@@ -24,27 +24,18 @@ class HomeController
     }
 
     #[Route('/', name: 'home', methods: ['GET'])]
-    public function showGames(): Response
+    public function showGames(#[CurrentUser] User $user): Response
     {
-        $user = $this->security->getUser();
-        $allGames = $this->getGamesByGameMaster($user);
+        // Game masters see their games; admins see every game.
+        $games = $this->security->isGranted('ROLE_ADMIN')
+            ? $this->gameRepository->findBy([], ['name' => 'ASC'])
+            : $this->gameRepository->getGamesAsGameMaster($user);
 
         return new Response(
             $this->twig->render('main/main.html.twig', [
                 'user' => $user,
-                'games' => $allGames,
+                'games' => $games,
             ])
         );
-    }
-
-    /** @return Game[] */
-    private function getGamesByGameMaster(UserInterface $user): array
-    {
-        $games = [];
-        foreach ($this->gameRepository->getGamesAsGameMaster($user) as $game) {
-            $games[] = $game;
-        }
-
-        return $games;
     }
 }

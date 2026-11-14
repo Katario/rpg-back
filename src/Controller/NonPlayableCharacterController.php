@@ -10,15 +10,16 @@ use App\Factory\NonPlayableCharacterFactory;
 use App\FormType\NonPlayableCharacterType;
 use App\Repository\NonPlayableCharacterRepository;
 use App\Repository\NonPlayableCharacterTemplateRepository;
+use App\Security\Voter\GameVoter;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\AsController;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Twig\Environment;
 
 #[AsController]
@@ -33,10 +34,9 @@ class NonPlayableCharacterController
     }
 
     #[Route('/npcs/{id}', name: 'show_non_playable_character', requirements: ['id' => '\d+'], methods: ['GET'])]
-    public function showNonPlayableCharacter(int $id): Response
+    #[IsGranted(GameVoter::MANAGE, 'nonPlayableCharacter')]
+    public function showNonPlayableCharacter(#[MapEntity(id: 'id')] NonPlayableCharacter $nonPlayableCharacter): Response
     {
-        $nonPlayableCharacter = $this->nonPlayableCharacterRepository->find($id);
-
         return new Response(
             $this->twig->render('non_playable_character/show.html.twig', [
                 'nonPlayableCharacter' => $nonPlayableCharacter,
@@ -49,15 +49,11 @@ class NonPlayableCharacterController
         requirements: ['id' => '\d+'],
         methods: ['GET', 'POST']
     )]
+    #[IsGranted(GameVoter::MANAGE, 'nonPlayableCharacter')]
     public function editNonPlayableCharacter(
         Request $request,
-        int $id,
+        #[MapEntity(id: 'id')] NonPlayableCharacter $nonPlayableCharacter,
     ): Response|RedirectResponse {
-        $nonPlayableCharacter = $this->nonPlayableCharacterRepository->find($id);
-        if (!$nonPlayableCharacter) {
-            throw new NotFoundHttpException();
-        }
-
         $form = $this->formFactory->create(
             NonPlayableCharacterType::class,
             $nonPlayableCharacter,
@@ -93,15 +89,10 @@ class NonPlayableCharacterController
         requirements: ['id' => '\d+'],
         methods: ['GET']
     )]
+    #[IsGranted(GameVoter::MANAGE, 'nonPlayableCharacter')]
     public function deleteNonPlayableCharacter(
-        int $id,
+        #[MapEntity(id: 'id')] NonPlayableCharacter $nonPlayableCharacter,
     ): Response {
-        $nonPlayableCharacter = $this->nonPlayableCharacterRepository->find($id);
-
-        if (!$nonPlayableCharacter) {
-            throw new NotFoundHttpException();
-        }
-
         $gameId = $nonPlayableCharacter->getGame()->getId();
         $this->nonPlayableCharacterRepository->delete($nonPlayableCharacter);
 
@@ -114,6 +105,7 @@ class NonPlayableCharacterController
         name: 'generate_non_playable_character',
         methods: ['GET', 'POST']
     )]
+    #[IsGranted(GameVoter::MANAGE, 'game')]
     public function generateNonPlayableCharacter(
         Request $request,
         #[MapEntity(mapping: ['gameId' => 'id'])] Game $game,

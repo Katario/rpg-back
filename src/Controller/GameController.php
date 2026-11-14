@@ -12,15 +12,17 @@ use App\Repository\EquipmentRepository;
 use App\Repository\GameRepository;
 use App\Repository\MonsterRepository;
 use App\Repository\NonPlayableCharacterRepository;
+use App\Security\Voter\GameVoter;
+use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\AsController;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Twig\Environment;
 
 #[AsController]
@@ -36,11 +38,10 @@ class GameController
     }
 
     #[Route('/games/{id}', name: 'show_game', requirements: ['id' => '\d+'], methods: ['GET'])]
+    #[IsGranted(GameVoter::MANAGE, 'game')]
     public function showGame(
-        int $id,
+        #[MapEntity(id: 'id')] Game $game,
     ): Response {
-        $game = $this->gameRepository->find($id);
-
         return new Response(
             $this->twig->render('game/show_game.html.twig', [
                 'game' => $game,
@@ -80,20 +81,15 @@ class GameController
         requirements: ['id' => '\d+'],
         methods: ['POST']
     )]
+    #[IsGranted(GameVoter::MANAGE, 'game')]
     public function deleteGame(
-        int $id,
+        #[MapEntity(id: 'id')] Game $game,
         Request $request,
         EquipmentRepository $armamentRepository,
         MonsterRepository $monsterRepository,
         CharacterRepository $characterRepository,
         NonPlayableCharacterRepository $nonPlayableCharacterRepository,
     ): Response {
-        $game = $this->gameRepository->find($id);
-
-        if (!$game) {
-            throw new NotFoundHttpException();
-        }
-
         $gameNameConfirmation = $request->get('gameNameConfirmation');
         if ($gameNameConfirmation !== $game->getName()) {
             return new RedirectResponse($this->router->generate(

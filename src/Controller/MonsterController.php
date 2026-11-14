@@ -10,15 +10,16 @@ use App\Factory\MonsterFactory;
 use App\FormType\MonsterType;
 use App\Repository\MonsterRepository;
 use App\Repository\MonsterTemplateRepository;
+use App\Security\Voter\GameVoter;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\AsController;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Twig\Environment;
 
 #[AsController]
@@ -33,11 +34,10 @@ class MonsterController
     }
 
     #[Route('/monsters/{id}', name: 'show_monster', requirements: ['id' => '\d+'], methods: ['GET'])]
+    #[IsGranted(GameVoter::MANAGE, 'monster')]
     public function showMonster(
-        int $id,
+        #[MapEntity(id: 'id')] Monster $monster,
     ): Response {
-        $monster = $this->monsterRepository->find($id);
-
         return new Response(
             $this->twig->render('monster/show.html.twig', [
                 'monster' => $monster,
@@ -50,16 +50,11 @@ class MonsterController
         requirements: ['id' => '\d+'],
         methods: ['GET', 'POST']
     )]
+    #[IsGranted(GameVoter::MANAGE, 'monster')]
     public function editMonster(
         Request $request,
-        int $id,
+        #[MapEntity(id: 'id')] Monster $monster,
     ): Response|RedirectResponse {
-        $monster = $this->monsterRepository->find($id);
-
-        if (!$monster) {
-            throw new NotFoundHttpException();
-        }
-
         $form = $this->formFactory->create(
             MonsterType::class,
             $monster,
@@ -94,16 +89,12 @@ class MonsterController
         requirements: ['id' => '\d+'],
         methods: ['GET']
     )]
+    #[IsGranted(GameVoter::MANAGE, 'monster')]
     public function deleteMonster(
-        int $id,
+        #[MapEntity(id: 'id')] Monster $monster,
     ): Response {
-        /** @var Monster $monster */
-        $monster = $this->monsterRepository->find($id);
-
-        if ($monster) {
-            $gameId = $monster->getGame()->getId();
-            $this->monsterRepository->delete($monster);
-        }
+        $gameId = $monster->getGame()->getId();
+        $this->monsterRepository->delete($monster);
 
         return new RedirectResponse($this->router->generate('show_game',
             ['id' => $gameId]
@@ -115,6 +106,7 @@ class MonsterController
         requirements: ['gameId' => '\d+'],
         methods: ['GET', 'POST']
     )]
+    #[IsGranted(GameVoter::MANAGE, 'game')]
     public function generateMonster(
         Request $request,
         #[MapEntity(mapping: ['gameId' => 'id'])] Game $game,

@@ -50,8 +50,27 @@ The API authenticates users with **opaque access tokens** (Symfony `access_token
   like today's full access through the token. Idempotent for the owner, `409` if another account owns it. No data is
   rewritten other than `user_id`.
 - A signed-in import (`POST /api/characters/import` with a bearer token) belongs to the user; an anonymous one has no owner.
-- The token routes stay public and unchanged for now (owned sheets included). Restricting them to the owner/GM comes
-  with the voters, then their removal once sheets are migrated.
+- The token routes stay public and unchanged for now (owned sheets included). Restricting them to the owner/GM
+  (`CharacterVoter`), then removing them, comes once sheets are migrated.
+
+## Permissions (back office)
+
+No global "game master" role: a user is the GM of the games they created (`Game.gameMaster`) and may play in others.
+
+- **`ROLE_ADMIN`** (`role_hierarchy` in `security.yaml`): manages the encyclopedia and every game.
+  Granted / revoked with `bin/console app:user:promote <email> [--revoke]`.
+- **`App\Security\Voter\GameVoter`** — `GameVoter::MANAGE`: the game's GM, or an admin. The subject is a `Game` or anything
+  that belongs to one (`Being`: characters, monsters, NPCs; `Equipment`). Applied to every game page of the back office
+  (show / delete game, show / edit / delete / generate monsters, NPCs, armaments, character generation).
+- **`App\Security\Voter\CharacterVoter`** — `VIEW`: the owner or whoever manages the game; `EDIT` / `DELETE`: whoever manages
+  the game only (the character form can reassign the player).
+- **Home page**: a GM sees their games, an admin sees every game.
+- **Encyclopedia**: browsing is open to every signed-in user (GMs pick templates); creating and deleting entries requires
+  `ROLE_ADMIN` (links hidden otherwise). The API import and the token item routes can still create encyclopedia entries
+  (see project 3 in `TODO.md`).
+- Controllers receive the entity (`#[MapEntity(id: 'id')]`, `404` when missing) and declare `#[IsGranted(attribute, 'argument')]`.
+- **Manual password reset** (no email sending yet): `bin/console app:user:reset-password <email>` asks the new password twice
+  (hidden, same rules as registration) and revokes the user's API tokens.
 
 ## Rate limiting
 

@@ -35,6 +35,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\RouterInterface;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Twig\Environment;
 
 #[AsController]
@@ -88,6 +89,7 @@ readonly class EncyclopediaController
         name: 'encyclopedia_create_spell',
         methods: ['GET', 'POST']
     )]
+    #[IsGranted('ROLE_ADMIN')]
     public function createSpell(
         Request $request,
         SpellRepository $spellRepository,
@@ -144,6 +146,7 @@ readonly class EncyclopediaController
         requirements: ['id' => '\d+'],
         methods: ['GET']
     )]
+    #[IsGranted('ROLE_ADMIN')]
     public function deleteSpell(
         int $id,
         SpellRepository $spellRepository,
@@ -161,6 +164,7 @@ readonly class EncyclopediaController
         name: 'encyclopedia_create_talent',
         methods: ['GET', 'POST']
     )]
+    #[IsGranted('ROLE_ADMIN')]
     public function createTalent(
         Request $request,
         TalentRepository $talentRepository,
@@ -217,6 +221,7 @@ readonly class EncyclopediaController
         requirements: ['id' => '\d+'],
         methods: ['GET']
     )]
+    #[IsGranted('ROLE_ADMIN')]
     public function deleteTalent(
         int $id,
         TalentRepository $talentRepository,
@@ -234,6 +239,7 @@ readonly class EncyclopediaController
         name: 'encyclopedia_create_item',
         methods: ['GET', 'POST']
     )]
+    #[IsGranted('ROLE_ADMIN')]
     public function createItem(
         Request $request,
     ): Response|RedirectResponse {
@@ -289,6 +295,7 @@ readonly class EncyclopediaController
         requirements: ['id' => '\d+'],
         methods: ['GET']
     )]
+    #[IsGranted('ROLE_ADMIN')]
     public function deleteItem(
         int $id,
         ItemRepository $itemRepository,
@@ -306,6 +313,7 @@ readonly class EncyclopediaController
         name: 'encyclopedia_create_skill',
         methods: ['GET', 'POST']
     )]
+    #[IsGranted('ROLE_ADMIN')]
     public function createSkill(
         Request $request,
         SkillRepository $skillRepository,
@@ -362,6 +370,7 @@ readonly class EncyclopediaController
         requirements: ['id' => '\d+'],
         methods: ['GET']
     )]
+    #[IsGranted('ROLE_ADMIN')]
     public function deleteSkill(
         int $id,
         SkillRepository $skillRepository,
@@ -379,6 +388,7 @@ readonly class EncyclopediaController
         name: 'encyclopedia_create_armament_template',
         methods: ['GET', 'POST']
     )]
+    #[IsGranted('ROLE_ADMIN')]
     public function createArmamentTemplate(
         Request $request,
         EquipmentTemplateRepository $armamentTemplateRepository,
@@ -435,6 +445,7 @@ readonly class EncyclopediaController
         requirements: ['id' => '\d+'],
         methods: ['GET']
     )]
+    #[IsGranted('ROLE_ADMIN')]
     public function deleteArmamentTemplate(
         int $id,
         EquipmentTemplateRepository $armamentTemplateRepository,
@@ -452,6 +463,7 @@ readonly class EncyclopediaController
         name: 'encyclopedia_create_monster_template',
         methods: ['GET', 'POST']
     )]
+    #[IsGranted('ROLE_ADMIN')]
     public function createMonsterTemplate(
         Request $request,
         MonsterTemplateRepository $monsterTemplateRepository,
@@ -508,6 +520,7 @@ readonly class EncyclopediaController
         requirements: ['id' => '\d+'],
         methods: ['GET']
     )]
+    #[IsGranted('ROLE_ADMIN')]
     public function deleteMonsterTemplate(
         int $id,
         MonsterTemplateRepository $monsterTemplateRepository,
@@ -525,6 +538,7 @@ readonly class EncyclopediaController
         name: 'encyclopedia_create_non_playable_character_template',
         methods: ['GET', 'POST']
     )]
+    #[IsGranted('ROLE_ADMIN')]
     public function createNonPlayableCharacterTemplate(
         Request $request,
         NonPlayableCharacterTemplateRepository $nonPlayableCharacterTemplateRepository,
@@ -581,6 +595,7 @@ readonly class EncyclopediaController
         requirements: ['id' => '\d+'],
         methods: ['GET']
     )]
+    #[IsGranted('ROLE_ADMIN')]
     public function deleteNonPlayableCharacterTemplate(
         int $id,
         NonPlayableCharacterTemplateRepository $nonPlayableCharacterTemplateRepository,
@@ -598,6 +613,7 @@ readonly class EncyclopediaController
         name: 'encyclopedia_create_character_template',
         methods: ['GET', 'POST']
     )]
+    #[IsGranted('ROLE_ADMIN')]
     public function createCharacterTemplate(
         Request $request,
         CharacterTemplateRepository $characterTemplateRepository,
@@ -654,6 +670,7 @@ readonly class EncyclopediaController
         requirements: ['id' => '\d+'],
         methods: ['GET']
     )]
+    #[IsGranted('ROLE_ADMIN')]
     public function deleteCharacterTemplate(
         int $id,
         CharacterTemplateRepository $characterTemplateRepository,

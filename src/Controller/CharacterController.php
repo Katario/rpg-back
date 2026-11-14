@@ -10,6 +10,8 @@ use App\Factory\CharacterFactory;
 use App\FormType\CharacterType;
 use App\Repository\CharacterRepository;
 use App\Repository\CharacterTemplateRepository;
+use App\Security\Voter\CharacterVoter;
+use App\Security\Voter\GameVoter;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\Form\FormFactoryInterface;
@@ -17,9 +19,9 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\AsController;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Twig\Environment;
 
 #[AsController]
@@ -35,11 +37,10 @@ class CharacterController
     }
 
     #[Route('/games/{gameId}/characters/{id}', name: 'show_character', requirements: ['gameId' => '\d+', 'id' => '\d+'], methods: ['GET'])]
+    #[IsGranted(CharacterVoter::VIEW, 'character')]
     public function showCharacter(
-        int $id,
+        #[MapEntity(id: 'id')] Character $character,
     ): Response {
-        $character = $this->characterRepository->find($id);
-
         return new Response(
             $this->twig->render('character/show.html.twig', [
                 'character' => $character,
@@ -52,16 +53,11 @@ class CharacterController
         requirements: ['gameId' => '\d+', 'id' => '\d+'],
         methods: ['GET', 'POST']
     )]
+    #[IsGranted(CharacterVoter::EDIT, 'character')]
     public function editCharacter(
         Request $request,
-        int $id,
+        #[MapEntity(id: 'id')] Character $character,
     ): Response|RedirectResponse {
-        $character = $this->characterRepository->find($id);
-
-        if (!$character) {
-            throw new NotFoundHttpException();
-        }
-
         $form = $this->formFactory->create(
             CharacterType::class,
             $character,
@@ -96,15 +92,10 @@ class CharacterController
         requirements: ['gameId' => '\d+', 'id' => '\d+'],
         methods: ['GET']
     )]
+    #[IsGranted(CharacterVoter::DELETE, 'character')]
     public function deleteCharacter(
-        int $id,
+        #[MapEntity(id: 'id')] Character $character,
     ): Response {
-        $character = $this->characterRepository->find($id);
-
-        if (!$character) {
-            throw new NotFoundHttpException();
-        }
-
         $gameId = $character->getGame()->getId();
         $this->characterRepository->delete($character);
 
@@ -116,6 +107,7 @@ class CharacterController
         requirements: ['gameId' => '\d+'],
         methods: ['GET', 'POST']
     )]
+    #[IsGranted(GameVoter::MANAGE, 'game')]
     public function generateCharacter(
         Request $request,
         #[MapEntity(mapping: ['gameId' => 'id'])] Game $game,

@@ -16,7 +16,9 @@
             </ul>
         </div>
         Afficher tous les sorts <a href="{{ path('encyclopedia_show_spells') }}"> >>> </a> <br />
+        {% if is_granted('ROLE_ADMIN') %}
         Ajouter un nouveau sort <a href="{{ path('encyclopedia_create_spell') }}"> +++ </a>
+        {% endif %}
     </div>
     <hr class="h-px my-8 w-72 mx-auto bg-gray-200 border-0 dark:bg-gray-700">
     <div>
@@ -30,7 +32,9 @@
             </ul>
         </div>
         Afficher tous les talents <a href="{{ path('encyclopedia_show_talents') }}"> >>> </a> <br />
+        {% if is_granted('ROLE_ADMIN') %}
         Ajouter un nouveau talent <a href="{{ path('encyclopedia_create_talent') }}"> +++ </a>
+        {% endif %}
     </div>
     <hr class="h-px my-8 w-72 mx-auto bg-gray-200 border-0 dark:bg-gray-700">
     <div>
@@ -44,7 +48,9 @@
             </ul>
         </div>
         Afficher tous les objets <a href="{{ path('encyclopedia_show_items') }}"> >>> </a> <br />
+        {% if is_granted('ROLE_ADMIN') %}
         Ajouter un nouvel objet <a href="{{ path('encyclopedia_create_item') }}"> +++ </a>
+        {% endif %}
     </div>
     <hr class="h-px my-8 w-72 mx-auto bg-gray-200 border-0 dark:bg-gray-700">
     <div>
@@ -58,7 +64,9 @@
             </ul>
         </div>
         Afficher toutes les compétences <a href="{{ path('encyclopedia_show_skills') }}"> >>> </a> <br />
+        {% if is_granted('ROLE_ADMIN') %}
         Ajouter une nouvelle compétence <a href="{{ path('encyclopedia_create_skill') }}"> +++ </a>
+        {% endif %}
     </div>
     <hr class="h-px my-8 w-72 mx-auto bg-gray-200 border-0 dark:bg-gray-700">
     <div>
@@ -72,7 +80,9 @@
             </ul>
         </div>
         Afficher toutes les templates d'équipements <a href="{{ path('encyclopedia_show_armament_templates') }}"> >>> </a> <br />
+        {% if is_granted('ROLE_ADMIN') %}
         Ajouter un nouveau template d'équipement <a href="{{ path('encyclopedia_create_armament_template') }}"> +++ </a>
+        {% endif %}
     </div>
     <hr class="h-px my-8 w-72 mx-auto bg-gray-200 border-0 dark:bg-gray-700">
     <div>
@@ -86,7 +96,9 @@
             </ul>
         </div>
         Afficher toutes les templates de monstres <a href="{{ path('encyclopedia_show_monster_templates') }}"> >>> </a> <br />
+        {% if is_granted('ROLE_ADMIN') %}
         Ajouter un nouveau template de monstre <a href="{{ path('encyclopedia_create_monster_template') }}"> +++ </a>
+        {% endif %}
     </div>
     <hr class="h-px my-8 w-72 mx-auto bg-gray-200 border-0 dark:bg-gray-700">
     <div>
@@ -100,7 +112,9 @@
             </ul>
         </div>
         Afficher toutes les templates de PNJ <a href="{{ path('encyclopedia_show_non_playable_character_templates') }}"> >>> </a> <br />
+        {% if is_granted('ROLE_ADMIN') %}
         Ajouter un nouveau template de PNJ <a href="{{ path('encyclopedia_create_non_playable_character_template') }}"> +++ </a>
+        {% endif %}
     </div>
     <hr class="h-px my-8 w-72 mx-auto bg-gray-200 border-0 dark:bg-gray-700">
     <div>
@@ -114,7 +128,9 @@
             </ul>
         </div>
         Afficher toutes les templates de Personnage <a href="{{ path('encyclopedia_show_character_templates') }}"> >>> </a> <br />
+        {% if is_granted('ROLE_ADMIN') %}
         Ajouter un nouveau template de Personnage <a href="{{ path('encyclopedia_create_character_template') }}"> +++ </a>
+        {% endif %}
     </div>
 
 {% endblock %}

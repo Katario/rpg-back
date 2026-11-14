@@ -10,7 +10,9 @@
             <li>{{ nonPlayableCharacterTemplate.name }}: {{ nonPlayableCharacterTemplate.characterClass.name }}, {{ nonPlayableCharacterTemplate.kind.name }}
                 <a href="{{ path('encyclopedia_show_non_playable_character_template', {'id': nonPlayableCharacterTemplate.id}) }}"> >>> </a>
                 {#                <a href="{{ path('encyclopedia_edit_non_playable_characterTemplate', {'id': nonPlayableCharacterTemplate.id}) }}"> +++ </a>#}
+                {% if is_granted('ROLE_ADMIN') %}
                 <a href="{{ path('encyclopedia_delete_non_playable_character_template', {'id': nonPlayableCharacterTemplate.id}) }}"> xxx </a>
+                {% endif %}
             </li>
         {% endfor %}
     </ul>

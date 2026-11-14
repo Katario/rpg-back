@@ -1,12 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-			message: '#^Negated boolean expression is always false\.$#'
-			identifier: booleanNot.alwaysFalse
-			count: 1
-			path: src/Controller/ArmamentController.php
-
-		-
 			message: '#^Variable \$character in PHPDoc tag @var does not match assigned variable \$armament\.$#'
 			identifier: varTag.differentVariable
 			count: 1
@@ -41,18 +35,6 @@ parameters:
 			identifier: varTag.differentVariable
 			count: 1
 			path: src/Controller/EncyclopediaController.php
-
-		-
-			message: '#^Parameter \#1 \$user of method App\\Controller\\HomeController\:\:getGamesByGameMaster\(\) expects Symfony\\Component\\Security\\Core\\User\\UserInterface, Symfony\\Component\\Security\\Core\\User\\UserInterface\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Controller/HomeController.php
-
-		-
-			message: '#^If condition is always true\.$#'
-			identifier: if.alwaysTrue
-			count: 1
-			path: src/Controller/MonsterController.php
 
 		-
 			message: '#^Parameter \#1 \$monsterTemplate of method App\\Factory\\MonsterFactory\:\:createOneFromMonsterTemplate\(\) expects App\\Entity\\MonsterTemplate, App\\Entity\\MonsterTemplate\|null given\.$#'

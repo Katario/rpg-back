@@ -10,7 +10,9 @@
             <li>{{ characterTemplate.name }}: {{ characterTemplate.characterClass.name }}, {{ characterTemplate.kind.name }}
                 <a href="{{ path('encyclopedia_show_character_template', {'id': characterTemplate.id}) }}"> >>> </a>
                 {#                <a href="{{ path('encyclopedia_edit_characterTemplate', {'id': characterTemplate.id}) }}"> +++ </a>#}
+                {% if is_granted('ROLE_ADMIN') %}
                 <a href="{{ path('encyclopedia_delete_character_template', {'id': characterTemplate.id}) }}"> xxx </a>
+                {% endif %}
             </li>
         {% endfor %}
     </ul>

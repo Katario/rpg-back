@@ -10,7 +10,9 @@
             <li>{{ skill.name }}, {{ skill.description }}
                 <a href="{{ path('encyclopedia_show_skill', {'id': skill.id}) }}"> >>> </a>
                 {#                <a href="{{ path('encyclopedia_edit_skill', {'id': skill.id}) }}"> +++ </a>#}
+                {% if is_granted('ROLE_ADMIN') %}
                 <a href="{{ path('encyclopedia_delete_skill', {'id': skill.id}) }}"> xxx </a>
+                {% endif %}
             </li>
         {% endfor %}
     </ul>

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\ApiToken;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -36,6 +37,24 @@ class ApiTokenRepository extends ServiceEntityRepository
             ->delete()
             ->where('t.expiresAt <= :now')
             ->setParameter('now', $now)
+            ->getQuery()
+            ->execute();
+
+        return $deleted;
+    }
+
+    /**
+     * Signs the user out of every device (e.g. after a password reset).
+     *
+     * @return int number of deleted tokens
+     */
+    public function deleteForUser(User $user): int
+    {
+        /** @var int $deleted */
+        $deleted = $this->createQueryBuilder('t')
+            ->delete()
+            ->where('t.user = :user')
+            ->setParameter('user', $user)
             ->getQuery()
             ->execute();
 

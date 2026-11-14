@@ -10,7 +10,9 @@
             <li>{{ armamentTemplate.name }}, {{ armamentTemplate.category }}, {{ armamentTemplate.description }}
                 <a href="{{ path('encyclopedia_show_armament_template', {'id': armamentTemplate.id}) }}"> >>> </a>
                 {#                <a href="{{ path('encyclopedia_edit_armamentTemplate', {'id': armamentTemplate.id}) }}"> +++ </a>#}
+                {% if is_granted('ROLE_ADMIN') %}
                 <a href="{{ path('encyclopedia_delete_armament_template', {'id': armamentTemplate.id}) }}"> xxx </a>
+                {% endif %}
             </li>
         {% endfor %}
     </ul>

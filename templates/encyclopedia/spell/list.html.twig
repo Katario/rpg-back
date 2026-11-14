@@ -10,7 +10,9 @@
             <li>{{ spell.name }}, {{ spell.description }}
                 <a href="{{ path('encyclopedia_show_spell', {'id': spell.id}) }}"> >>> </a>
 {#                <a href="{{ path('encyclopedia_edit_spell', {'id': spell.id}) }}"> +++ </a>#}
+                {% if is_granted('ROLE_ADMIN') %}
                 <a href="{{ path('encyclopedia_delete_spell', {'id': spell.id}) }}"> xxx </a>
+                {% endif %}
             </li>
         {% endfor %}
     </ul>

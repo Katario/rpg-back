@@ -12,6 +12,7 @@ use App\Factory\WeaponFactory;
 use App\FormType\ArmamentType;
 use App\Repository\EquipmentRepository;
 use App\Repository\EquipmentTemplateRepository;
+use App\Security\Voter\GameVoter;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -21,6 +22,7 @@ use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\RouterInterface;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Twig\Environment;
 
 #[AsController]
@@ -35,11 +37,10 @@ class ArmamentController
     }
 
     #[Route('/armaments/{id}', name: 'show_armament', requirements: ['id' => '\d+'], methods: ['GET'])]
+    #[IsGranted(GameVoter::MANAGE, 'armament')]
     public function showArmament(
-        int $id,
+        #[MapEntity(id: 'id')] Equipment $armament,
     ): Response {
-        $armament = $this->armamentRepository->find($id);
-
         return new Response(
             $this->twig->render('armament/show.html.twig', [
                 'armament' => $armament,
@@ -52,16 +53,11 @@ class ArmamentController
         requirements: ['id' => '\d+'],
         methods: ['GET', 'POST']
     )]
+    #[IsGranted(GameVoter::MANAGE, 'armament')]
     public function editArmament(
         Request $request,
-        int $id,
+        #[MapEntity(id: 'id')] Equipment $armament,
     ): Response|RedirectResponse {
-        $armament = $this->armamentRepository->find($id);
-
-        if (!$armament) {
-            throw new NotFoundHttpException();
-        }
-
         $form = $this->formFactory->create(
             ArmamentType::class,
             $armament
@@ -94,16 +90,10 @@ class ArmamentController
         requirements: ['id' => '\d+'],
         methods: ['GET']
     )]
+    #[IsGranted(GameVoter::MANAGE, 'armament')]
     public function deleteArmament(
-        int $id,
+        #[MapEntity(id: 'id')] Equipment $armament,
     ): Response {
-        /** @var Equipment $armament */
-        $armament = $this->armamentRepository->find($id);
-
-        if (!$armament) {
-            throw new NotFoundHttpException();
-        }
-
         $gameId = $armament->getGame()->getId();
         $this->armamentRepository->delete($armament);
 
@@ -116,6 +106,7 @@ class ArmamentController
         name: 'generate_armament',
         requirements: ['gameId' => '\d+'],
         methods: ['GET', 'POST']),]
+    #[IsGranted(GameVoter::MANAGE, 'game')]
     public function generateArmament(
         Request $request,
         #[MapEntity(mapping: ['gameId' => 'id'])] Game $game,

@@ -7,6 +7,10 @@ security:
         app_user_provider:
             entity:
                 class: App\Entity\User
+    # ROLE_ADMIN: manages the encyclopedia and every game (granted with `bin/console app:user:promote`).
+    role_hierarchy:
+        ROLE_ADMIN: ROLE_USER
+
     firewalls:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
