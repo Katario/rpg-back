@@ -28,7 +28,7 @@ Validation errors on account routes: `422` with field-indexed messages, so the c
 
 `400` when the body is not valid JSON.
 
-Rate limited routes answer `429` with `{ "error": ... }` (and `Retry-After` on registration).
+Rate limited routes answer `429` with `{ "error": ... }` and a `Retry-After` header (seconds, exposed to CORS clients).
 
 ## Routes
 

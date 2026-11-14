@@ -19,9 +19,13 @@ class ApiLoginFailureHandler implements AuthenticationFailureHandlerInterface
     public function onAuthenticationFailure(Request $request, AuthenticationException $exception): JsonResponse
     {
         if ($exception instanceof TooManyLoginAttemptsAuthenticationException) {
+            // Threshold in minutes before the next attempt (null when unknown).
+            $minutes = (int) ($exception->getMessageData()['%minutes%'] ?? 0);
+
             return new JsonResponse(
                 ['error' => 'Too many failed login attempts, please try again later.'],
                 Response::HTTP_TOO_MANY_REQUESTS,
+                $minutes > 0 ? ['Retry-After' => (string) ($minutes * 60)] : [],
             );
         }
 

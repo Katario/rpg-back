@@ -41,7 +41,7 @@ class InitialFixtures extends Fixture implements FixtureGroupInterface
             'email' => 'katario@fixture.com',
             'username' => 'katario',
             'password' => 'test',
-            'roles' => [],
+            'roles' => ['ROLE_ADMIN'],
         ]);
 
         $secondAccount = UserFactory::createOne([

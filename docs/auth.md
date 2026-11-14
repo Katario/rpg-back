@@ -76,8 +76,11 @@ No global "game master" role: a user is the GM of the games they created (`Game.
 
 `symfony/rate-limiter`, state stored in the `cache.rate_limiter` pool (filesystem cache by default).
 
-- **Sign-in** (`login_throttling` on both the `api` and `main` firewalls): 5 failed attempts per minute per email + IP,
-  25 per minute per IP. A successful sign-in resets the counter.
+- **Sign-in** (`login_throttling` on the `api_login` and `main` firewalls): 5 failed attempts per minute per email + IP,
+  25 per minute per IP. A successful sign-in resets the counter. `POST /api/auth/login` has its own firewall
+  (`api_login`) on purpose: throttling applies to every authenticator of a firewall, so on `api` it would also count
+  rejected bearer tokens (e.g. an expired token still sent by the front) and, once the IP limit is reached, reject
+  valid tokens too.
 - **Registration** (limiter `registration` in `config/packages/rate_limiter.yaml`, API and web sign-up): 10 attempts per
   hour per IP, failed ones included (it also slows down probing which emails have an account). API: `429` + `Retry-After`;
   web: the form is re-rendered with an error (`429`).

@@ -15,16 +15,14 @@ security:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
-        # Stateless API: users authenticate with "Authorization: Bearer <token>" (see docs/auth.md).
-        # Requests without the header stay anonymous, so the public token-based character routes
-        # keep working; protected routes use #[IsGranted].
-        api:
-            pattern: ^/api/
+        # POST /api/auth/login {email, password}: issues an access token (see docs/auth.md).
+        # Separate firewall so that login throttling only counts failed sign-ins: on the `api`
+        # firewall it would also count rejected (e.g. expired) bearer tokens, and once the per-IP
+        # limit is reached it would reject valid tokens too.
+        api_login:
+            pattern: ^/api/auth/login$
             stateless: true
             provider: app_user_provider
-            access_token:
-                token_handler: App\Security\ApiTokenHandler
-            # POST /api/auth/login {email, password}: issues an access token (see docs/auth.md).
             json_login:
                 check_path: api_auth_login
                 username_path: email
@@ -35,6 +33,15 @@ security:
             login_throttling:
                 max_attempts: 5
                 interval: '1 minute'
+        # Stateless API: users authenticate with "Authorization: Bearer <token>" (see docs/auth.md).
+        # Requests without the header stay anonymous, so the public token-based character routes
+        # keep working; protected routes use #[IsGranted].
+        api:
+            pattern: ^/api/
+            stateless: true
+            provider: app_user_provider
+            access_token:
+                token_handler: App\Security\ApiTokenHandler
         main:
             form_login:
                 login_path: sign_in

@@ -5,5 +5,5 @@ nelmio_cors:
             allow_origin: ['%env(CORS_ALLOW_ORIGIN)%']
             allow_methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS']
             allow_headers: ['Content-Type', 'Authorization']
-            expose_headers: ['WWW-Authenticate']
+            expose_headers: ['WWW-Authenticate', 'Retry-After']
             max_age: 3600

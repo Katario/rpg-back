@@ -172,6 +172,7 @@ class AuthControllerTest extends WebTestCase
         // Even the right password is refused until the window expires.
         $this->login($client, 'aldric@example.com', 'secret-password');
         self::assertResponseStatusCodeSame(429);
+        self::assertResponseHeaderSame('Retry-After', '60');
     }
 
     public function testLoginRequiresAJsonBody(): void

@@ -12,6 +12,7 @@ use App\Fixtures\DataFixtures\Factory\UserFactory;
 use App\Repository\ApiTokenRepository;
 use App\Security\ApiTokenHandler;
 use App\Tests\Support\IssuesApiTokens;
+use App\Tests\Support\ResetsRateLimiters;
 use PHPUnit\Framework\Attributes\CoversClass;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Zenstruck\Foundry\Test\Factories;
@@ -24,6 +25,7 @@ class ApiAuthenticationTest extends WebTestCase
     use Factories;
     use IssuesApiTokens;
     use ResetDatabase;
+    use ResetsRateLimiters;
 
     public function testMeReturnsTheAuthenticatedUser(): void
     {
@@ -122,5 +124,24 @@ class ApiAuthenticationTest extends WebTestCase
             'authorization',
             (string) $client->getResponse()->headers->get('Access-Control-Allow-Headers'),
         );
+    }
+
+    public function testRejectedBearerTokensDoNotLockOutSignInsFromTheSameAddress(): void
+    {
+        $client = static::createClient();
+        $user = UserFactory::createOne(['email' => 'aldric@example.com', 'password' => 'secret123'])->_real();
+        $token = $this->issueApiToken($user);
+
+        // e.g. several devices on the same network still sending an expired token
+        for ($i = 0; $i < 30; ++$i) {
+            $client->request('GET', '/api/me', server: $this->bearer('rpg_expired'));
+            self::assertResponseStatusCodeSame(401);
+        }
+
+        $client->request('GET', '/api/me', server: $this->bearer($token));
+        self::assertResponseIsSuccessful();
+
+        $client->jsonRequest('POST', '/api/auth/login', ['email' => 'aldric@example.com', 'password' => 'secret123']);
+        self::assertResponseIsSuccessful();
     }
 }
