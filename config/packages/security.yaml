@@ -20,10 +20,24 @@ security:
             provider: app_user_provider
             access_token:
                 token_handler: App\Security\ApiTokenHandler
+            # POST /api/auth/login {email, password}: issues an access token (see docs/auth.md).
+            json_login:
+                check_path: api_auth_login
+                username_path: email
+                password_path: password
+                success_handler: App\Security\ApiLoginSuccessHandler
+                failure_handler: App\Security\ApiLoginFailureHandler
+            # Failed sign-ins: 5 per minute per email + IP (and 5 x 5 per IP).
+            login_throttling:
+                max_attempts: 5
+                interval: '1 minute'
         main:
             form_login:
                 login_path: sign_in
                 check_path: sign_in
+            login_throttling:
+                max_attempts: 5
+                interval: '1 minute'
             logout:
                 path: /logout
             lazy: true

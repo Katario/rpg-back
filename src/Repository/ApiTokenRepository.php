@@ -42,6 +42,12 @@ class ApiTokenRepository extends ServiceEntityRepository
         return $deleted;
     }
 
+    public function delete(ApiToken $apiToken): void
+    {
+        $this->getEntityManager()->remove($apiToken);
+        $this->getEntityManager()->flush();
+    }
+
     public function save(ApiToken $apiToken): void
     {
         $this->getEntityManager()->persist($apiToken);

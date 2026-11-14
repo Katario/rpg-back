@@ -11,6 +11,7 @@ use App\Factory\UserFactory as AppUserFactory;
 use App\Fixtures\DataFixtures\Factory\UserFactory;
 use App\FormType\UserType;
 use App\Repository\UserRepository;
+use App\Tests\Support\ResetsRateLimiters;
 use App\Validator\UniqueUserEmailValidator;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -29,6 +30,7 @@ class UserControllerTest extends WebTestCase
 {
     use Factories;
     use ResetDatabase;
+    use ResetsRateLimiters;
 
     public function testSignUpWithoutUsernameCreatesAccount(): void
     {
@@ -71,6 +73,36 @@ class UserControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(422);
         self::assertSelectorExists('#user_email[value="new.player@example.com"]');
         self::assertCount(0, self::getContainer()->get(UserRepository::class)->findAll());
+    }
+
+    public function testSignUpIsRateLimitedPerIp(): void
+    {
+        $client = static::createClient();
+
+        for ($i = 0; $i < 10; ++$i) {
+            $this->submitSignUp($client, "player$i@example.com", 'short');
+            self::assertResponseStatusCodeSame(422);
+        }
+
+        $this->submitSignUp($client, 'one-too-many@example.com', 'secret-password');
+
+        self::assertResponseStatusCodeSame(429);
+        self::assertSelectorTextContains('form', 'Too many registration attempts');
+        self::assertCount(0, self::getContainer()->get(UserRepository::class)->findAll());
+    }
+
+    public function testSignInIsThrottledAfterFiveFailedAttempts(): void
+    {
+        $client = static::createClient();
+        UserFactory::createOne(['email' => 'aldric@example.com', 'password' => 'secret-password']);
+
+        for ($i = 0; $i < 5; ++$i) {
+            $this->signIn($client, 'aldric@example.com', 'wrong-password');
+        }
+        $this->signIn($client, 'aldric@example.com', 'secret-password');
+
+        $client->request('GET', '/');
+        self::assertResponseRedirects('http://localhost/sign-in');
     }
 
     public function testSignInWithEmail(): void

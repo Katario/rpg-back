@@ -16,6 +16,7 @@ use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
@@ -45,10 +46,17 @@ class UserController extends AbstractController
         Request $request,
         UserFactory $userFactory,
         UserRepository $userRepository,
+        RateLimiterFactoryInterface $registrationLimiter,
     ): Response|RedirectResponse {
         $form = $this->formFactory->create(UserType::class);
 
         $form->handleRequest($request);
+
+        if ($form->isSubmitted() && !$registrationLimiter->create($request->getClientIp())->consume()->isAccepted()) {
+            $form->addError(new FormError('Too many registration attempts, please try again later.'));
+
+            return $this->render('user/sign_up.html.twig', ['form' => $form], new Response(status: Response::HTTP_TOO_MANY_REQUESTS));
+        }
 
         if ($form->isSubmitted() && $form->isValid()) {
             /** @var RegisterUserRequest $registration */

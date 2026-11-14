@@ -1,0 +1,9 @@
+framework:
+    rate_limiter:
+        # Registration attempts (API and web sign-up), keyed by client IP. Every attempt counts,
+        # failed ones included: it also slows down probing which emails already have an account.
+        registration:
+            policy: sliding_window
+            limit: 10
+            interval: '1 hour'
+

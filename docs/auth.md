@@ -22,7 +22,7 @@ The API authenticates users with **opaque access tokens** (Symfony `access_token
 - **Issuing** (`App\Security\ApiTokenManager::issue()`): generates `rpg_` + 64 random hex chars, persists the hash,
   and returns the plain token — the **only** time it is available. Lifetime: **30 days** (`ApiTokenManager::LIFETIME`), no refresh token: the user signs in again.
 - **Lookup**: `ApiTokenRepository::findOneByPlainToken()` hashes then queries; expiry is checked by the caller (`ApiToken::isExpired()`).
-- **Cleanup**: `ApiTokenRepository::deleteExpired()`.
+- **Cleanup**: `ApiTokenRepository::deleteExpired()`, run by `bin/console app:api-token:purge` (to schedule in a cron, e.g. daily).
 - **Authentication** (`App\Security\ApiTokenHandler`, firewall `api` in `security.yaml`, pattern `^/api/`, stateless):
   reads `Authorization: Bearer <token>`, rejects unknown/expired tokens (`401` + `WWW-Authenticate`), refreshes
   `lastUsedAt` at most every 5 minutes (no write on every request).
@@ -30,6 +30,30 @@ The API authenticates users with **opaque access tokens** (Symfony `access_token
     routes are unchanged. Protected routes declare `#[IsGranted('IS_AUTHENTICATED')]`.
   - A sent token is always checked, even on public routes (no silent fallback to anonymous).
 - **Current user**: `GET /api/me`.
+
+## Sign-in & sign-out (API)
+
+- `POST /api/auth/login` with a JSON `{ email, password }`: handled by the `json_login` authenticator of the `api` firewall
+  (the controller action is only reached for a non-JSON request → `400`). Same email lookup as the web (case-insensitive).
+  - Success (`App\Security\ApiLoginSuccessHandler`): issues a token → `{ token, expiresAt, user }`. Each sign-in issues a
+    new token (one per device); no session is created.
+  - Failure (`App\Security\ApiLoginFailureHandler`): `401` `{ "error": "Invalid credentials." }`, the same for an unknown
+    email and a wrong password; `429` when throttled.
+- `POST /api/auth/logout`: deletes the token used for the request (`204`). Other tokens of the user stay valid.
+
+## Rate limiting
+
+`symfony/rate-limiter`, state stored in the `cache.rate_limiter` pool (filesystem cache by default).
+
+- **Sign-in** (`login_throttling` on both the `api` and `main` firewalls): 5 failed attempts per minute per email + IP,
+  25 per minute per IP. A successful sign-in resets the counter.
+- **Registration** (limiter `registration` in `config/packages/rate_limiter.yaml`, API and web sign-up): 10 attempts per
+  hour per IP, failed ones included (it also slows down probing which emails have an account). API: `429` + `Retry-After`;
+  web: the form is re-rendered with an error (`429`).
+- Tests: `App\Tests\Support\ResetsRateLimiters` clears the pool before each test (an in-memory pool would not work:
+  the kernel resets it between requests, even with `disableReboot()`).
+- Behind a reverse proxy, limits are keyed by `Request::getClientIp()`: configure `trusted_proxies`, otherwise every
+  client shares the proxy IP.
 
 ## Registration (API and web)
 

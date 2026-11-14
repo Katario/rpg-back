@@ -13,7 +13,9 @@ Two ways to access it, side by side:
 
 | Method | Route | Description |
 |---|---|---|
-| `POST` | `/api/auth/register` | Create an account. Body `{ email, password }`. `201` → the user (same shape as `/api/me`). |
+| `POST` | `/api/auth/register` | Create an account. Body `{ email, password }`. `201` → the user (same shape as `/api/me`). Does not sign in. `429` after 10 attempts per hour per IP. |
+| `POST` | `/api/auth/login` | Sign in. JSON body `{ email, password }`. `200` → `{ token, expiresAt, user }`; `401` `{ "error": "Invalid credentials." }` (same for unknown email and wrong password); `429` after 5 failed attempts per minute; `400` if the body is not JSON. |
+| `POST` | `/api/auth/logout` | Revokes the token sent in `Authorization` (other devices stay signed in). `204`; `401` without a valid token. |
 | `GET` | `/api/me` | The authenticated user: `{ id, email, username, displayName, roles }` (`App\Serializer\UserSerializer`). `401` without a valid token. |
 
 Validation errors on account routes: `422` with field-indexed messages, so the client can display them next to each field:
@@ -23,6 +25,8 @@ Validation errors on account routes: `422` with field-indexed messages, so the c
 ```
 
 `400` when the body is not valid JSON.
+
+Rate limited routes answer `429` with `{ "error": ... }` (and `Retry-After` on registration).
 
 ## Routes
 
