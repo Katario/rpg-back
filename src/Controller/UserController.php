@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Entity\User;
+use App\Dto\RegisterUserRequest;
+use App\Factory\UserFactory;
 use App\FormType\UserType;
 use App\Repository\UserRepository;
+use App\Validator\UniqueUserEmail;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Form\FormError;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
@@ -40,29 +43,29 @@ class UserController extends AbstractController
     #[Route('/sign-up', name: 'sign_up', methods: ['GET', 'POST'])]
     public function signUp(
         Request $request,
+        UserFactory $userFactory,
         UserRepository $userRepository,
-        UserPasswordHasherInterface $passwordHasher,
     ): Response|RedirectResponse {
         $form = $this->formFactory->create(UserType::class);
 
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            /** @var User $user */
-            $user = $form->getData();
-            $user->setPassword(
-                $passwordHasher->hashPassword(
-                    $user,
-                    $user->getPassword()
-                )
-            );
-            $userRepository->save($user);
+            /** @var RegisterUserRequest $registration */
+            $registration = $form->getData();
 
-            return $this->redirectToRoute('sign_in');
+            try {
+                $userRepository->save($userFactory->createOneFromRegistration($registration));
+
+                return $this->redirectToRoute('sign_in');
+            } catch (UniqueConstraintViolationException) {
+                $form->get('email')->addError(new FormError(UniqueUserEmail::MESSAGE));
+            }
         }
 
+        // Passing the form (not its view) answers 422 when the submission is invalid.
         return $this->render('user/sign_up.html.twig', [
-            'form' => $form->createView(),
+            'form' => $form,
         ]);
     }
 }

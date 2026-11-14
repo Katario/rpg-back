@@ -30,3 +30,17 @@ The API authenticates users with **opaque access tokens** (Symfony `access_token
     routes are unchanged. Protected routes declare `#[IsGranted('IS_AUTHENTICATED')]`.
   - A sent token is always checked, even on public routes (no silent fallback to anonymous).
 - **Current user**: `GET /api/me`.
+
+## Registration (API and web)
+
+Both the API (`POST /api/auth/register`, `{ email, password }`) and the web sign-up form (`/sign-up`, `App\FormType\UserType`)
+share the same rules: data in `App\Dto\RegisterUserRequest` (Symfony Validator constraints), account built by
+`App\Factory\UserFactory::createOneFromRegistration()` (hashes the password; the controller persists it).
+
+- `email`: required, valid email, max 180 chars; normalized (trimmed, lowercased). Must not be used by another account —
+  checked **case-insensitively** by `App\Validator\UniqueUserEmail` (legacy mixed-case accounts), plus the unique index as a safety net for concurrent requests.
+- `password`: required, 8 to 4096 chars; hashed with the configured password hasher.
+- No `username` is asked (display falls back to the email).
+- API: returns `201` with the user; it does **not** sign the user in — the client then calls the login route.
+  Errors: `422` `{ error, violations: { field: [messages] } }` (an already used email is reported on `email`), `400` for an invalid JSON body.
+- Web: redirects to `/sign-in` on success; an invalid submission re-renders the form with its errors (`422`).

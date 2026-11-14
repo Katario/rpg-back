@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace App\Tests\Integration\Controller\Web;
 
 use App\Controller\UserController;
+use App\Dto\RegisterUserRequest;
 use App\Entity\User;
+use App\Factory\UserFactory as AppUserFactory;
 use App\Fixtures\DataFixtures\Factory\UserFactory;
+use App\FormType\UserType;
 use App\Repository\UserRepository;
+use App\Validator\UniqueUserEmailValidator;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -17,6 +21,10 @@ use Zenstruck\Foundry\Test\ResetDatabase;
 
 #[CoversClass(UserController::class)]
 #[CoversClass(UserRepository::class)]
+#[CoversClass(UserType::class)]
+#[CoversClass(RegisterUserRequest::class)]
+#[CoversClass(AppUserFactory::class)]
+#[CoversClass(UniqueUserEmailValidator::class)]
 class UserControllerTest extends WebTestCase
 {
     use Factories;
@@ -40,6 +48,29 @@ class UserControllerTest extends WebTestCase
         $user = self::getContainer()->get(UserRepository::class)->findOneBy(['email' => 'new.player@example.com']);
         self::assertInstanceOf(User::class, $user);
         self::assertNull($user->getUsername());
+    }
+
+    public function testSignUpRejectsAnAlreadyUsedEmailCaseInsensitively(): void
+    {
+        $client = static::createClient();
+        UserFactory::createOne(['email' => 'aldric@example.com']);
+
+        $this->submitSignUp($client, 'Aldric@Example.com', 'secret-password');
+
+        self::assertResponseStatusCodeSame(422);
+        self::assertSelectorTextContains('form', 'This email is already used.');
+        self::assertCount(1, self::getContainer()->get(UserRepository::class)->findAll());
+    }
+
+    public function testSignUpRejectsAShortPassword(): void
+    {
+        $client = static::createClient();
+
+        $this->submitSignUp($client, 'new.player@example.com', 'short');
+
+        self::assertResponseStatusCodeSame(422);
+        self::assertSelectorExists('#user_email[value="new.player@example.com"]');
+        self::assertCount(0, self::getContainer()->get(UserRepository::class)->findAll());
     }
 
     public function testSignInWithEmail(): void
@@ -80,6 +111,15 @@ class UserControllerTest extends WebTestCase
 
         $client->request('GET', '/');
         self::assertResponseIsSuccessful();
+    }
+
+    private function submitSignUp(KernelBrowser $client, string $email, string $password): void
+    {
+        $crawler = $client->request('GET', '/sign-up');
+        $client->submit($crawler->filter('form')->form([
+            'user[email]' => $email,
+            'user[password]' => $password,
+        ]));
     }
 
     private function signIn(KernelBrowser $client, string $identifier, string $password): void

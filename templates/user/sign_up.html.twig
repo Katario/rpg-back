@@ -16,23 +16,24 @@
         >
             <div class="md:basis-1/2">
                 <label class="required" for="user_email">Email:</label>
-                <input type="email" id="user_email" name="user[email]" required />
-{#                <input type="email" id="user_email" name="_email" required />#}
+                <input type="email" id="user_email" name="user[email]" value="{{ form.email.vars.value }}" maxlength="180" required />
+                {{ form_errors(form.email) }}
             </div>
 
             <div class="md:basis-1/2">
                 <label class="required" for="user_password">Password:</label>
-                <input type="password" id="user_password" name="user[password]" required />
-{#                <input type="password" id="user_password" name="_password" required />#}
+                <input type="password" id="user_password" name="user[password]" minlength="8" required />
+                {{ form_errors(form.password) }}
             </div>
 
             <twig:Button
                 class="md:basis-1/2"
                 type="submit"
             >
-                Sign In
+                Sign Up
             </twig:Button>
 
+            {{ form_errors(form) }}
             {{ form_row(form._token) }}
         </form>
 

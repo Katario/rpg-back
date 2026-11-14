@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Api;
 
 use App\Entity\User;
+use App\Serializer\UserSerializer;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
@@ -16,14 +17,8 @@ class MeController extends AbstractController
 {
     #[Route('/me', name: 'api_me', methods: ['GET'])]
     #[IsGranted('IS_AUTHENTICATED')]
-    public function me(#[CurrentUser] User $user): JsonResponse
+    public function me(#[CurrentUser] User $user, UserSerializer $userSerializer): JsonResponse
     {
-        return $this->json([
-            'id' => $user->getId(),
-            'email' => $user->getEmail(),
-            'username' => $user->getUsername(),
-            'displayName' => $user->getDisplayName(),
-            'roles' => $user->getRoles(),
-        ]);
+        return $this->json($userSerializer->serialize($user));
     }
 }

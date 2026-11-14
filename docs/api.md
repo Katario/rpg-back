@@ -13,7 +13,16 @@ Two ways to access it, side by side:
 
 | Method | Route | Description |
 |---|---|---|
-| `GET` | `/api/me` | The authenticated user: `{ id, email, username, displayName, roles }`. `401` without a valid token. |
+| `POST` | `/api/auth/register` | Create an account. Body `{ email, password }`. `201` → the user (same shape as `/api/me`). |
+| `GET` | `/api/me` | The authenticated user: `{ id, email, username, displayName, roles }` (`App\Serializer\UserSerializer`). `401` without a valid token. |
+
+Validation errors on account routes: `422` with field-indexed messages, so the client can display them next to each field:
+
+```json
+{ "error": "Validation failed", "violations": { "email": ["This email is already used."], "password": ["This value is too short. It should have 8 characters or more."] } }
+```
+
+`400` when the body is not valid JSON.
 
 ## Routes
 

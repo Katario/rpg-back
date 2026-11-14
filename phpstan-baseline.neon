@@ -67,12 +67,6 @@ parameters:
 			path: src/Controller/NonPlayableCharacterController.php
 
 		-
-			message: '#^Parameter \#2 \$plainPassword of method Symfony\\Component\\PasswordHasher\\Hasher\\UserPasswordHasherInterface\:\:hashPassword\(\) expects string, string\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Controller/UserController.php
-
-		-
 			message: '#^Method App\\Entity\\Being\:\:getEquipments\(\) return type with generic interface Doctrine\\Common\\Collections\\Collection does not specify its types\: TKey, T$#'
 			identifier: missingType.generics
 			count: 1
