@@ -22,7 +22,7 @@ class Character extends Being
 
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'characters')]
     #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: true)]
-    private ?User $user;
+    private ?User $user = null;
 
     #[ORM\JoinTable(name: 'playable_characters_kind')]
     #[ORM\JoinColumn(name: 'being_id', referencedColumnName: 'id', unique: true, onDelete: 'cascade')]

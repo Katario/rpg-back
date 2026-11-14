@@ -17,6 +17,8 @@ Two ways to access it, side by side:
 | `POST` | `/api/auth/login` | Sign in. JSON body `{ email, password }`. `200` → `{ token, expiresAt, user }`; `401` `{ "error": "Invalid credentials." }` (same for unknown email and wrong password); `429` after 5 failed attempts per minute; `400` if the body is not JSON. |
 | `POST` | `/api/auth/logout` | Revokes the token sent in `Authorization` (other devices stay signed in). `204`; `401` without a valid token. |
 | `GET` | `/api/me` | The authenticated user: `{ id, email, username, displayName, roles }` (`App\Serializer\UserSerializer`). `401` without a valid token. |
+| `GET` | `/api/me/characters` | Characters owned by the user, sorted by name: `[{ id, token, name, lastName, level, avatarUrl, kind, characterClass, game: { id, name } }]` (`CharacterSerializer::summarize()`). The sheet itself is read and played through the `{token}` routes. |
+| `POST` | `/api/me/characters/claim` | Links an existing sheet to the user. Body `{ token }` (the character token). `200` → the summary (also when already owned by the user); `404` unknown token; `409` owned by another account; `400` missing token. |
 
 Validation errors on account routes: `422` with field-indexed messages, so the client can display them next to each field:
 
@@ -36,7 +38,7 @@ Rate limited routes answer `429` with `{ "error": ... }` (and `Retry-After` on r
 |---|---|---|
 | `GET` | `/api/characters/{token}` | Get full character sheet. Returns `422` if the character has no kind. |
 | `GET` | `/api/characters/{token}/export` | Export the character sheet as JSON (same payload as the sheet endpoint). Returns `422` if the character has no kind. |
-| `POST` | `/api/characters/import` | Import a character from an export payload. Returns the created character (`201`), same shape as the sheet. |
+| `POST` | `/api/characters/import` | Import a character from an export payload. Returns the created character (`201`), same shape as the sheet. With a valid `Authorization` header, the character belongs to the user. |
 | `PATCH` | `/api/characters/{token}/stats` | Update current stat values |
 | `POST` | `/api/characters/{token}/level-up` | Level up |
 | `DELETE` | `/api/characters/{token}` | Delete character |
@@ -62,6 +64,7 @@ The character payload (returned by `GET /api/characters/{token}` **and** `GET /a
 ```
 
 - `gameId` is optional (defaults to `1`) — the target game for the imported character.
+- Owner: the signed-in user when a user access token is sent; none for an anonymous import (as before).
 - `data` is a sheet payload as returned by the export/sheet endpoint.
 
 Rules (a mirror of the read model, so `export → import → export` round-trips identically):

@@ -16,8 +16,11 @@ use App\Fixtures\DataFixtures\Factory\KindFactory;
 use App\Fixtures\DataFixtures\Factory\SkillFactory;
 use App\Fixtures\DataFixtures\Factory\SpellFactory;
 use App\Fixtures\DataFixtures\Factory\TalentFactory;
+use App\Fixtures\DataFixtures\Factory\UserFactory;
 use App\Fixtures\DataFixtures\Factory\WeaponFactory;
+use App\Repository\CharacterRepository;
 use App\Serializer\CharacterDeserializer;
+use App\Tests\Support\IssuesApiTokens;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -29,6 +32,7 @@ use Zenstruck\Foundry\Test\ResetDatabase;
 class ImportControllerTest extends WebTestCase
 {
     use Factories;
+    use IssuesApiTokens;
     use ResetDatabase;
 
     public function testExportImportRoundTripIsIdentical(): void
@@ -152,6 +156,48 @@ class ImportControllerTest extends WebTestCase
         self::assertCount(2, $talents[0]->getTalentLevels());
         self::assertCount(1, $response['talents'][0]['talentLevels']);
         self::assertCount(2, $response['talents'][0]['allTalentLevels']);
+    }
+
+    public function testSignedInImportBelongsToTheUser(): void
+    {
+        $client = static::createClient();
+        $user = UserFactory::createOne()->_real();
+        $game = GameFactory::createOne();
+
+        $client->request(
+            'POST',
+            '/api/characters/import',
+            server: ['CONTENT_TYPE' => 'application/json'] + $this->bearer($this->issueApiToken($user)),
+            content: (string) json_encode([
+                'gameId' => $game->getId(),
+                'data' => ['token' => 'mine', 'name' => 'Zora', 'kind' => ['name' => 'Human']],
+            ]),
+        );
+
+        self::assertResponseStatusCodeSame(201);
+        $character = self::getContainer()->get(CharacterRepository::class)->findOneByToken('mine');
+        self::assertSame($user->getId(), $character?->getUser()?->getId());
+    }
+
+    public function testAnonymousImportHasNoOwner(): void
+    {
+        $client = static::createClient();
+        $game = GameFactory::createOne();
+
+        $client->request(
+            'POST',
+            '/api/characters/import',
+            server: ['CONTENT_TYPE' => 'application/json'],
+            content: (string) json_encode([
+                'gameId' => $game->getId(),
+                'data' => ['token' => 'anonymous', 'name' => 'Zora', 'kind' => ['name' => 'Human']],
+            ]),
+        );
+
+        self::assertResponseStatusCodeSame(201);
+        $character = self::getContainer()->get(CharacterRepository::class)->findOneByToken('anonymous');
+        self::assertNotNull($character);
+        self::assertNull($character->getUser());
     }
 
     public function testImportReturns409WhenTokenAlreadyExists(): void

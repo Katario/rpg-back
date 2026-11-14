@@ -25,6 +25,30 @@ class CharacterSerializer
     }
 
     /**
+     * Light payload for character lists (e.g. GET /api/me/characters): the full sheet is fetched with the token.
+     *
+     * @param string $baseUrl scheme + host used to build the absolute avatar URL
+     *
+     * @return array<string, mixed>
+     */
+    public function summarize(Character $character, string $baseUrl): array
+    {
+        $game = $character->getGame();
+
+        return [
+            'id' => $character->getId(),
+            'token' => $character->getToken(),
+            'name' => $character->getName(),
+            'lastName' => $character->getLastName(),
+            'level' => $character->getLevel(),
+            'avatarUrl' => $this->avatarUrl($character, $baseUrl),
+            'kind' => $character->getKind()?->getName(),
+            'characterClass' => $character->getCharacterClass()?->getName(),
+            'game' => ['id' => $game->getId(), 'name' => $game->getName()],
+        ];
+    }
+
+    /**
      * @param string $baseUrl scheme + host used to build the absolute avatar URL (e.g. "https://api.example.com")
      *
      * @return array<string, mixed>
@@ -173,9 +197,7 @@ class CharacterSerializer
                 'current' => $character->getCurrentMentalPoints(),
                 'max' => $character->getMaxMentalPoints(),
             ],
-            'avatarUrl' => $character->getAvatarUrl()
-                ? $baseUrl.$character->getAvatarUrl()
-                : null,
+            'avatarUrl' => $this->avatarUrl($character, $baseUrl),
             'kind' => $kind ? [
                 'id' => $kind->getId(),
                 'name' => $kind->getName(),
@@ -204,5 +226,10 @@ class CharacterSerializer
             'primaryTalents' => $primaryTalents,
             'secondaryTalents' => $secondaryTalents,
         ];
+    }
+
+    private function avatarUrl(Character $character, string $baseUrl): ?string
+    {
+        return $character->getAvatarUrl() ? $baseUrl.$character->getAvatarUrl() : null;
     }
 }

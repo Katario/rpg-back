@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Entity\User;
 use App\Repository\CharacterRepository;
 use App\Repository\GameRepository;
 use App\Serializer\CharacterDeserializer;
@@ -13,6 +14,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 #[Route('/api')]
 class ImportController extends AbstractController
@@ -24,6 +26,7 @@ class ImportController extends AbstractController
         CharacterRepository $characterRepository,
         CharacterDeserializer $characterDeserializer,
         CharacterSerializer $characterSerializer,
+        #[CurrentUser] ?User $user,
     ): JsonResponse {
         $body = json_decode($request->getContent(), true);
 
@@ -47,6 +50,7 @@ class ImportController extends AbstractController
         }
 
         $character = $characterDeserializer->deserialize($data, $game);
+        $character->setUser($user);
         $characterRepository->save($character);
 
         return $this->json(

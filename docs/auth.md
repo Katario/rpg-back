@@ -41,6 +41,18 @@ The API authenticates users with **opaque access tokens** (Symfony `access_token
     email and a wrong password; `429` when throttled.
 - `POST /api/auth/logout`: deletes the token used for the request (`204`). Other tokens of the user stay valid.
 
+## Characters & accounts
+
+`Character.user` (nullable) is the owner of a sheet. Existing sheets without owner keep working through their token.
+
+- `GET /api/me/characters`: the user's characters (light summary with the `token`; the sheet is still played through the token routes).
+- `POST /api/me/characters/claim` `{ token }`: links an unowned sheet to the user — whoever holds the token can claim it,
+  like today's full access through the token. Idempotent for the owner, `409` if another account owns it. No data is
+  rewritten other than `user_id`.
+- A signed-in import (`POST /api/characters/import` with a bearer token) belongs to the user; an anonymous one has no owner.
+- The token routes stay public and unchanged for now (owned sheets included). Restricting them to the owner/GM comes
+  with the voters, then their removal once sheets are migrated.
+
 ## Rate limiting
 
 `symfony/rate-limiter`, state stored in the `cache.rate_limiter` pool (filesystem cache by default).
