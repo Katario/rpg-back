@@ -24,6 +24,11 @@ class Character extends Being
     #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: true)]
     private ?User $user = null;
 
+    // A disabled sheet stays readable but the API refuses any change (see docs/game.md). Set when its owner leaves or
+    // is removed from the game; the game master can change it from the back office.
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $isDisabled = false;
+
     #[ORM\JoinTable(name: 'playable_characters_kind')]
     #[ORM\JoinColumn(name: 'being_id', referencedColumnName: 'id', unique: true, onDelete: 'cascade')]
     #[ORM\InverseJoinColumn(name: 'kind_id', referencedColumnName: 'id')]
@@ -75,6 +80,25 @@ class Character extends Being
     public function setUser(?User $user): Character
     {
         $this->user = $user;
+
+        return $this;
+    }
+
+    public function isDisabled(): bool
+    {
+        return $this->isDisabled;
+    }
+
+    public function disable(): Character
+    {
+        $this->isDisabled = true;
+
+        return $this;
+    }
+
+    public function enable(): Character
+    {
+        $this->isDisabled = false;
 
         return $this;
     }

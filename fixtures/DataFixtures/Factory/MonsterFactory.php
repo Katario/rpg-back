@@ -20,11 +20,13 @@ final class MonsterFactory extends PersistentProxyObjectFactory
     }
 
     /**
-     * @return array<bool|int|string>
+     * @return array<string, mixed>
      */
     protected function defaults(): array
     {
         return [
+            // Everything belongs to a game (NOT NULL).
+            'game' => GameFactory::new(),
             'name' => self::faker()->text(50),
             'level' => 1,
             'isBoss' => false,

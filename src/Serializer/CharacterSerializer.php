@@ -41,6 +41,7 @@ class CharacterSerializer
             'name' => $character->getName(),
             'lastName' => $character->getLastName(),
             'level' => $character->getLevel(),
+            'disabled' => $character->isDisabled(),
             'avatarUrl' => $this->avatarUrl($character, $baseUrl),
             'kind' => $character->getKind()?->getName(),
             'characterClass' => $character->getCharacterClass()?->getName(),
@@ -173,6 +174,8 @@ class CharacterSerializer
             'name' => $character->getName(),
             'lastName' => $character->getLastName(),
             'level' => $character->getLevel(),
+            // Read-only sheet: every change is refused with a 403 (DisabledCharacterGuard).
+            'disabled' => $character->isDisabled(),
             'health' => [
                 'current' => $character->getCurrentHealthPoints(),
                 'max' => $character->getMaxHealthPoints(),

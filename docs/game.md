@@ -25,6 +25,18 @@ invite code. Every character belongs to exactly one game.
   the invite code; `Game::unarchive()` does not reopen the game. An archived game is hidden and closed to new
   players, its characters keep working.
 
+## Disabled characters
+
+`Character.isDisabled` (`being.is_disabled`, default `false`): a disabled sheet is **read-only on the API**. It stays
+readable (sheet, export, `GET /api/me/characters` with `disabled: true`), but every change to
+`/api/characters/{token}/...` (`POST`, `PATCH`, `DELETE`) gets a `403` `{ "error": "This character is disabled." }`,
+whatever the access (character token or account).
+
+- Enforced in one place, `App\EventListener\DisabledCharacterGuard` (kernel request listener): every `api_character_*`
+  route with a `{token}` and an unsafe method — new write routes are covered without extra code.
+- A character is disabled when its owner leaves or is removed from the game (they keep it); the game master can disable
+  or enable it from the back office, where they can still edit it. Archiving a game does not disable its characters.
+
 ## Migration of existing data
 
 `Version20261115210404` is additive (new table, two nullable columns). Players were implicit before (owners of a
@@ -33,3 +45,5 @@ Existing games start closed (no invite code).
 
 `Version20261115212047` sets `game.game_master`, `being.game_id` and `equipment.game_id` to `NOT NULL`. It rewrites no
 data: it stops, with nothing applied, if a row still has no game / game master (production inventory of 2026-11-15: none).
+
+`Version20261115214031` adds `being.is_disabled` (default `false`, nothing rewritten).

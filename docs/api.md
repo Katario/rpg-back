@@ -17,7 +17,7 @@ Two ways to access it, side by side:
 | `POST` | `/api/auth/login` | Sign in. JSON body `{ email, password }`. `200` → `{ token, expiresAt, user }`; `401` `{ "error": "Invalid credentials." }` (same for unknown email and wrong password); `429` after 5 failed attempts per minute; `400` if the body is not JSON. |
 | `POST` | `/api/auth/logout` | Revokes the token sent in `Authorization` (other devices stay signed in). `204`; `401` without a valid token. |
 | `GET` | `/api/me` | The authenticated user: `{ id, email, username, displayName, roles }` (`App\Serializer\UserSerializer`). `401` without a valid token. |
-| `GET` | `/api/me/characters` | Characters owned by the user, sorted by name: `[{ id, token, name, lastName, level, avatarUrl, kind, characterClass, game: { id, name } }]` (`CharacterSerializer::summarize()`). The sheet itself is read and played through the `{token}` routes. |
+| `GET` | `/api/me/characters` | Characters owned by the user, sorted by name: `[{ id, token, name, lastName, level, disabled, avatarUrl, kind, characterClass, game: { id, name } }]` (`CharacterSerializer::summarize()`). The sheet itself is read and played through the `{token}` routes. |
 | `POST` | `/api/me/characters/claim` | Links an existing sheet to the user. Body `{ token }` (the character token). `200` → the summary (also when already owned by the user); `404` unknown token; `409` owned by another account; `400` missing token. |
 
 Validation errors on account routes: `422` with field-indexed messages, so the client can display them next to each field:
@@ -49,6 +49,7 @@ Rate limited routes answer `429` with `{ "error": ... }` and a `Retry-After` hea
 
 The character payload (returned by `GET /api/characters/{token}` **and** `GET /api/characters/{token}/export`) is produced by a single service, `App\Serializer\CharacterSerializer` — the source of truth for the read model. Both endpoints delegate to it, so their payloads can never diverge; a new field is added in one place. It includes:
 
+- `disabled` — `true` for a **disabled** character: the sheet stays readable, but every change through `/api/characters/{token}/...` (`POST`, `PATCH`, `DELETE`) is refused with `403` `{ "error": "This character is disabled." }`, whatever the access (token or account). See `docs/game.md`.
 - `kind` — always a non-null object (`{ id, name, bonuses }`). A character **must have a kind** (race); `GET` returns `422 Unprocessable Entity` for a character without one. `characterClass`, by contrast, may be `null`.
 - `weapons[].damageLines`, `armors[].damageLines`, `skills[].damageLines`, `spells[].damageLines` — raw array of damage line objects: `{ diceCount, diceFaces, fixedAmount, type, element }` (see `docs/damage.md`).
 - `spells[].type` — `"active"` or `"passive"`.
@@ -253,6 +254,7 @@ Unchanged. Both return `{ currentLoadPoints }` (and `quantity` for PATCH) — `c
 - `201 Created` — resource created, returns the serialized object (not just the id)
 - `204 No Content` — update/delete successful, no body
 - `400 Bad Request` — missing or invalid fields
+- `403 Forbidden` — e.g. a change to a disabled character
 - `404 Not Found` — resource not found
 - `409 Conflict` — duplicate (e.g. character with same name in same game)
 - `422 Unprocessable Entity` — business rule violation (e.g. invalid level-up)

@@ -20,11 +20,13 @@ final class ArmorFactory extends PersistentProxyObjectFactory
     }
 
     /**
-     * @return array<bool|\DateTimeImmutable|int|string>
+     * @return array<string, mixed>
      */
     protected function defaults(): array
     {
         return [
+            // Everything belongs to a game (NOT NULL).
+            'game' => GameFactory::new(),
             'currentDurabilityPoints' => self::faker()->numberBetween(1, 10),
             'description' => self::faker()->text(),
             'maxDurabilityPoints' => self::faker()->numberBetween(11, 20),
