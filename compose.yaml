@@ -3,8 +3,9 @@ services:
   database:
     container_name: rpg-app-database
     image: postgres:${POSTGRES_VERSION:-16}-alpine
+    # Local host ports: RPG block 51xxx (see the port allocation in server-infra).
     ports:
-      - "9285:5432"
+      - "51432:5432"
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-app}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
@@ -25,8 +26,8 @@ services:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
-    ports:
-      - '9000:9000'
+    # No host port: nginx reaches php-fpm on php:9000 inside the network, and publishing 9000
+    # collided with PhpStorm / Xdebug on the host.
     volumes:
       - .:/var/www/app
     depends_on:
@@ -42,7 +43,7 @@ services:
     container_name: rpg-app-server
     image: nginx:1.27-alpine
     ports:
-      - "9984:80"
+      - "51080:80"
     volumes:
       - .:/var/www/app
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
@@ -56,9 +57,9 @@ services:
 ###> symfony/mailer ###
   mailer:
     image: axllent/mailpit
+    # Web UI only; SMTP (1025) stays internal to the network.
     ports:
-      - "1025"
-      - "8025"
+      - "51825:8025"
     environment:
       MP_SMTP_AUTH_ACCEPT_ANY: 1
       MP_SMTP_AUTH_ALLOW_INSECURE: 1

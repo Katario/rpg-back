@@ -114,7 +114,7 @@ class ApiAuthenticationTest extends WebTestCase
         $client = static::createClient();
 
         $client->request('OPTIONS', '/api/me', server: [
-            'HTTP_ORIGIN' => 'http://localhost:5173',
+            'HTTP_ORIGIN' => 'http://localhost:51173',
             'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'GET',
             'HTTP_ACCESS_CONTROL_REQUEST_HEADERS' => 'authorization',
         ]);

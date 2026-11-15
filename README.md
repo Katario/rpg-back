@@ -8,7 +8,7 @@ To run the project, you need to have Docker installed (version 28+ are supported
    2. Copy the `.env` to a `.env.local`, and fill the different keys.
    3. Pull the Docker image, build the container and log into it: `make start`
    4. Create the database, the schema, and add fixtures: `make reset-database`
-   5. You should now be able to access the website at `http://localhost:9984`
+   5. You should now be able to access the website at `http://localhost:51080 (Mailpit: `http://localhost:51825`, database: `localhost:51432`)`
 
 Note: to interact with the project, I recommend connecting to the *-php container and starting every command in it.
 The only commands you should do outside the container should be `make` and `git` commands.
