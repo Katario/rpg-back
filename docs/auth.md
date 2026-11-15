@@ -49,7 +49,9 @@ The API authenticates users with **opaque access tokens** (Symfony `access_token
 - `POST /api/me/characters/claim` `{ token }`: links an unowned sheet to the user — whoever holds the token can claim it,
   like today's full access through the token. Idempotent for the owner, `409` if another account owns it. No data is
   rewritten other than `user_id`.
-- A signed-in import (`POST /api/characters/import` with a bearer token) belongs to the user; an anonymous one has no owner.
+- A signed-in import (`POST /api/characters/import` with a bearer token) belongs to the user and requires a `gameId` they play in
+  (see `docs/game.md`); an anonymous one has no owner (legacy: game `1` by default).
+- Claiming a sheet makes the user a player of its game (unless they are its game master).
 - The token routes stay public and unchanged for now (owned sheets included). Restricting them to the owner/GM
   (`CharacterVoter`), then removing them, comes once sheets are migrated.
 

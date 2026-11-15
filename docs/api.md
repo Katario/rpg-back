@@ -18,7 +18,7 @@ Two ways to access it, side by side:
 | `POST` | `/api/auth/logout` | Revokes the token sent in `Authorization` (other devices stay signed in). `204`; `401` without a valid token. |
 | `GET` | `/api/me` | The authenticated user: `{ id, email, username, displayName, roles }` (`App\Serializer\UserSerializer`). `401` without a valid token. |
 | `GET` | `/api/me/characters` | Characters owned by the user, sorted by name: `[{ id, token, name, lastName, level, disabled, avatarUrl, kind, characterClass, game: { id, name } }]` (`CharacterSerializer::summarize()`). The sheet itself is read and played through the `{token}` routes. |
-| `POST` | `/api/me/characters/claim` | Links an existing sheet to the user. Body `{ token }` (the character token). `200` → the summary (also when already owned by the user); `404` unknown token; `409` owned by another account; `400` missing token. |
+| `POST` | `/api/me/characters/claim` | Links an existing sheet to the user, who also becomes a **player of its game** (unless they are its game master). Body `{ token }` (the character token). `200` → the summary (also when already owned by the user); `404` unknown token; `409` owned by another account; `400` missing token. |
 | `GET` | `/api/games` | Games the user **plays in** (memberships; not the ones they run, managed in the back office), sorted by name: `[{ id, name, gameMaster: { username }, joinedAt, archived }]` (`App\Serializer\GameSerializer`). `gameMaster.username` may be `null`: the game master's email is never exposed to players. Archived games are included (`archived: true`): their characters still work. |
 | `POST` | `/api/games/join` | Join a game. Body `{ code }`, the invite code as typed (case, spaces and dashes ignored). `200` → the game (same shape as the list); idempotent. `404` no open game has this code (unknown, deleted, or archived game: same answer); `409` the user is the game master; `400` missing code; `429` after 10 attempts per 15 minutes per user. |
 | `POST` | `/api/games/{id}/leave` | Leave a game. `204`; the player keeps their characters of the game but they are **disabled** (read-only). `404` for an unknown game or a game the user does not play in. |
@@ -41,7 +41,7 @@ Rate limited routes answer `429` with `{ "error": ... }` and a `Retry-After` hea
 |---|---|---|
 | `GET` | `/api/characters/{token}` | Get full character sheet. Returns `422` if the character has no kind. |
 | `GET` | `/api/characters/{token}/export` | Export the character sheet as JSON (same payload as the sheet endpoint). Returns `422` if the character has no kind. |
-| `POST` | `/api/characters/import` | Import a character from an export payload. Returns the created character (`201`), same shape as the sheet. With a valid `Authorization` header, the character belongs to the user. |
+| `POST` | `/api/characters/import` | Import a character from an export payload. Returns the created character (`201`), same shape as the sheet. With a valid `Authorization` header, the character belongs to the user and `gameId` must be a game they play in (see below). |
 | `PATCH` | `/api/characters/{token}/stats` | Update current stat values |
 | `POST` | `/api/characters/{token}/level-up` | Level up |
 | `DELETE` | `/api/characters/{token}` | Delete character |
@@ -67,8 +67,11 @@ The character payload (returned by `GET /api/characters/{token}` **and** `GET /a
 { "gameId": 1, "data": { /* an export payload (a full character sheet) */ } }
 ```
 
-- `gameId` is optional (defaults to `1`) — the target game for the imported character.
-- Owner: the signed-in user when a user access token is sent; none for an anonymous import (as before).
+- **Signed in** (user access token): `gameId` is **required** (`400` otherwise) and must be a game the user plays in,
+  as a player or its game master (`GameVoter::PLAY`, `403` otherwise; `404` unknown game). The character belongs to the user.
+- **Anonymous** (legacy, kept until production is migrated to accounts): `gameId` is optional (defaults to `1`), any
+  game is accepted; the character has no owner.
+- Either way, an **archived** game is refused (`409`).
 - `data` is a sheet payload as returned by the export/sheet endpoint.
 
 Rules (a mirror of the read model, so `export → import → export` round-trips identically):

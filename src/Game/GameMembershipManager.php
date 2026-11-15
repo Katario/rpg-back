@@ -88,6 +88,18 @@ class GameMembershipManager
     }
 
     /**
+     * Makes the owner of a character a player of its game (e.g. when they claim the sheet), without invite code.
+     * Idempotent; nothing for the game master, who is never a player of their own game.
+     */
+    public function addOwnerAsPlayer(Game $game, User $owner): void
+    {
+        if (!$game->isGameMaster($owner)) {
+            $game->addMember($owner);
+            $this->entityManager->flush();
+        }
+    }
+
+    /**
      * @throws NotAMemberException
      */
     public function leave(Game $game, User $user): void

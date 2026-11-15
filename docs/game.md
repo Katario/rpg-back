@@ -66,6 +66,16 @@ the game page.
 `POST /api/games/{id}/leave` — see `docs/api.md`. Joining is rate limited (`game_join` limiter: 10 attempts per
 15 minutes per user, every attempt counts).
 
+## Characters & games
+
+- **Signed-in import** (`POST /api/characters/import` with a bearer token): `gameId` required, a game the user plays
+  in (`GameVoter::PLAY`: player or game master, not archived). **Anonymous import** (legacy): unchanged — `gameId`
+  defaults to `1`, any game — except that archived games are refused (`409`), like for a signed-in import.
+- **Claiming a sheet** (`POST /api/me/characters/claim`) makes its owner a player of the sheet's game
+  (`GameMembershipManager::addOwnerAsPlayer()`, no invite code needed: holding the sheet token is the proof), except
+  the game master. An idempotent claim also adds a missing membership.
+- The character token routes stay public and unchanged (owned and disabled sheets included, see above).
+
 ## Permissions
 
 `App\Security\Voter\GameVoter`:

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Api;
 
 use App\Entity\User;
+use App\Game\GameMembershipManager;
 use App\Repository\CharacterRepository;
 use App\Serializer\CharacterSerializer;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -46,6 +47,7 @@ class MyCharacterController extends AbstractController
         Request $request,
         CharacterRepository $characterRepository,
         CharacterSerializer $characterSerializer,
+        GameMembershipManager $gameMembershipManager,
     ): JsonResponse {
         $body = json_decode($request->getContent(), true);
 
@@ -65,8 +67,10 @@ class MyCharacterController extends AbstractController
 
         if (!$owner) {
             $character->setUser($user);
-            $characterRepository->save($character);
         }
+        // Owning a sheet makes the user a player of its game (also repairs an older claim).
+        $gameMembershipManager->addOwnerAsPlayer($character->getGame(), $user);
+        $characterRepository->save($character);
 
         return $this->json($characterSerializer->summarize($character, $request->getSchemeAndHttpHost()));
     }

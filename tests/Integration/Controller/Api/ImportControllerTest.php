@@ -23,6 +23,7 @@ use App\Serializer\CharacterDeserializer;
 use App\Tests\Support\IssuesApiTokens;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
+use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Zenstruck\Foundry\Test\Factories;
 use Zenstruck\Foundry\Test\ResetDatabase;
@@ -162,21 +163,86 @@ class ImportControllerTest extends WebTestCase
     {
         $client = static::createClient();
         $user = UserFactory::createOne()->_real();
-        $game = GameFactory::createOne();
+        $game = GameFactory::createOne()->_real();
+        $game->addMember($user);
+        self::getContainer()->get(EntityManagerInterface::class)->flush();
+
+        $this->signedInImport($client, $this->issueApiToken($user), ['gameId' => $game->getId()], 'mine');
+
+        self::assertResponseStatusCodeSame(201);
+        $character = self::getContainer()->get(CharacterRepository::class)->findOneByToken('mine');
+        self::assertNotNull($character);
+        self::assertSame($user->getId(), $character->getUser()?->getId());
+        self::assertSame($game->getId(), $character->getGame()->getId());
+    }
+
+    public function testTheGameMasterCanImportIntoTheirGame(): void
+    {
+        $client = static::createClient();
+        $gameMaster = UserFactory::createOne()->_real();
+        $game = GameFactory::createOne(['gameMaster' => $gameMaster]);
+
+        $this->signedInImport($client, $this->issueApiToken($gameMaster), ['gameId' => $game->getId()], 'gm-sheet');
+
+        self::assertResponseStatusCodeSame(201);
+    }
+
+    public function testSignedInImportNeedsAGameTheUserPlaysIn(): void
+    {
+        $client = static::createClient();
+        $user = UserFactory::createOne()->_real();
+        $othersGame = GameFactory::createOne();
+
+        $accessToken = $this->issueApiToken($user);
+
+        $this->signedInImport($client, $accessToken, [], 'no-game');
+        self::assertResponseStatusCodeSame(400);
+        self::assertSame(['error' => 'Field "gameId" is required'], json_decode((string) $client->getResponse()->getContent(), true));
+
+        $this->signedInImport($client, $accessToken, ['gameId' => 999999], 'unknown-game');
+        self::assertResponseStatusCodeSame(404);
+
+        $this->signedInImport($client, $accessToken, ['gameId' => $othersGame->getId()], 'not-my-game');
+        self::assertResponseStatusCodeSame(403);
+
+        self::assertCount(0, self::getContainer()->get(CharacterRepository::class)->findAll());
+    }
+
+    public function testNoImportIntoAnArchivedGame(): void
+    {
+        $client = static::createClient();
+        $player = UserFactory::createOne()->_real();
+        $game = GameFactory::createOne()->_real();
+        $game->addMember($player);
+        $game->archive();
+        self::getContainer()->get(EntityManagerInterface::class)->flush();
+
+        $this->signedInImport($client, $this->issueApiToken($player), ['gameId' => $game->getId()], 'signed-in');
+        self::assertResponseStatusCodeSame(409);
 
         $client->request(
             'POST',
             '/api/characters/import',
-            server: ['CONTENT_TYPE' => 'application/json'] + $this->bearer($this->issueApiToken($user)),
+            server: ['CONTENT_TYPE' => 'application/json'],
             content: (string) json_encode([
                 'gameId' => $game->getId(),
-                'data' => ['token' => 'mine', 'name' => 'Zora', 'kind' => ['name' => 'Human']],
+                'data' => ['token' => 'anonymous', 'name' => 'Zora', 'kind' => ['name' => 'Human']],
             ]),
         );
+        self::assertResponseStatusCodeSame(409);
+    }
 
-        self::assertResponseStatusCodeSame(201);
-        $character = self::getContainer()->get(CharacterRepository::class)->findOneByToken('mine');
-        self::assertSame($user->getId(), $character?->getUser()?->getId());
+    /**
+     * @param array<string, mixed> $body
+     */
+    private function signedInImport(KernelBrowser $client, string $accessToken, array $body, string $token): void
+    {
+        $client->request(
+            'POST',
+            '/api/characters/import',
+            server: ['CONTENT_TYPE' => 'application/json'] + $this->bearer($accessToken),
+            content: (string) json_encode($body + ['data' => ['token' => $token, 'name' => 'Zora', 'kind' => ['name' => 'Human']]]),
+        );
     }
 
     public function testAnonymousImportHasNoOwner(): void

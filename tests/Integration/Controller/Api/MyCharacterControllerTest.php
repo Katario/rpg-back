@@ -72,7 +72,9 @@ class MyCharacterControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSame('Zora', $this->json($client)['name']);
-        self::assertSame($user->getId(), $this->character('zora-token')->getUser()?->getId());
+        $character = $this->character('zora-token');
+        self::assertSame($user->getId(), $character->getUser()?->getId());
+        self::assertTrue($character->getGame()->hasMember($user), 'Claiming a sheet makes the user a player of its game.');
 
         // The token routes keep working after the claim.
         $client->request('GET', '/api/characters/zora-token/export');
@@ -89,6 +91,18 @@ class MyCharacterControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSame($user->getId(), $this->character('zora-token')->getUser()?->getId());
+    }
+
+    public function testTheGameMasterClaimingASheetOfTheirGameDoesNotBecomeAPlayer(): void
+    {
+        $client = static::createClient();
+        $gameMaster = UserFactory::createOne()->_real();
+        CharacterFactory::createOne(['game' => GameFactory::createOne(['gameMaster' => $gameMaster]), 'token' => 'npc-like']);
+
+        $this->claim($client, $this->issueApiToken($gameMaster), 'npc-like');
+
+        self::assertResponseIsSuccessful();
+        self::assertCount(0, $this->character('npc-like')->getGame()->getMemberships());
     }
 
     public function testClaimRefusesACharacterOwnedByAnotherAccount(): void
