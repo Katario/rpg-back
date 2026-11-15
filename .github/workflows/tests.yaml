@@ -66,6 +66,12 @@ jobs:
           php bin/console doctrine:database:create --if-not-exists
           php bin/console doctrine:migrations:migrate --no-interaction
 
+      - name: Build Tailwind CSS
+        env:
+          APP_ENV: test
+          APP_SECRET: testsecret
+        run: php bin/console tailwind:build
+
       - name: PHPUnit Tests
         run: ./vendor/bin/phpunit src tests --testdox
         env:

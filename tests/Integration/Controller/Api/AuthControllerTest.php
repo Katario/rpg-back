@@ -172,7 +172,11 @@ class AuthControllerTest extends WebTestCase
         // Even the right password is refused until the window expires.
         $this->login($client, 'aldric@example.com', 'secret-password');
         self::assertResponseStatusCodeSame(429);
-        self::assertResponseHeaderSame('Retry-After', '60');
+        // Whole minutes, rounded up by Symfony from the end of the current window: 60 or 120
+        // depending on when the test runs within that window.
+        $retryAfter = (int) $client->getResponse()->headers->get('Retry-After');
+        self::assertGreaterThan(0, $retryAfter);
+        self::assertSame(0, $retryAfter % 60);
     }
 
     public function testLoginRequiresAJsonBody(): void

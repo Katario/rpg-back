@@ -58,6 +58,12 @@ jobs:
         run: |
           php bin/console doctrine:database:create --if-not-exists
           php bin/console doctrine:migrations:migrate --no-interaction
+      - name: Build Tailwind CSS
+        env:
+          APP_ENV: test
+          APP_SECRET: testsecret
+        run: php bin/console tailwind:build
+
       - name: PHPUnit
         env:
           DATABASE_URL: postgresql://app-test:password@127.0.0.1:${{ job.services.postgres.ports['5432'] }}/app_test?serverVersion=16&charset=utf8
