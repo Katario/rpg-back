@@ -5,7 +5,14 @@
     <main class="p-12 flex flex-col bg-emerald-100 gap-8">
         <h1 class="text-3xl self-center text-center">Partie {{ game.name }}</h1>
 
-        {{ include('game/_invitation.html.twig') }}
+        {% if game.archived %}
+            <p class="bg-gray-300 p-4" role="status">
+                Partie archivée le {{ game.archivedAt|date('d/m/Y') }} : elle est fermée aux nouveaux joueurs,
+                ses fiches restent jouables.
+            </p>
+        {% else %}
+            {{ include('game/_invitation.html.twig') }}
+        {% endif %}
 
         {{ include('game/_players.html.twig') }}
 
@@ -25,54 +32,18 @@
             game="{{ game }}"
         />
 
-        <twig:Modal
-            :closeButton="true"
-            :fixedTop="true"
-            id="delete-game-modal"
+        {# Archiving replaces deletion: nothing is deleted (see docs/game.md). #}
+        <form
+            method="POST"
+            data-turbo="false"
+            action="{{ path(game.archived ? 'unarchive_game' : 'archive_game', {id: game.id}) }}"
+            {% if not game.archived %}onsubmit="return confirm('Archiver la partie ? Elle sera masquée et fermée aux nouveaux joueurs. Rien n\'est supprimé, les fiches restent jouables.')"{% endif %}
         >
-            <twig:block name="trigger">
-                <twig:Button
-                    variant="danger"
-                    type="button"
-                    data-action="modal#open"
-                >
-                    Delete the Game
-                </twig:Button>
-            </twig:block>
-
-            <twig:block name="content">
-                <p class="">
-                    Are you sure that you want to delete this game ?
-                    Remember, all the Characters, NPCs, Armaments and Monsters created in this game will be deleted.
-
-                    All the Templates, the Items, the Spells and the skills will remains.
-
-                    If you're sure about continuing, please enter the name of the game to continue (case Sensitive): <b class="font-bold">{{ game.name }}</b>
-                </p>
-
-                <form
-                    method='POST'
-                    data-turbo="false"
-                    action="{{ path('delete_game', {'id' : game.id}) }}"
-                >
-                    <label>
-                        Name of the game:
-
-                        <input
-                            type="text"
-                            placeholder="Name of the game"
-                            name="gameNameConfirmation"
-                        />
-                        <twig:Button
-                            variant="danger"
-                            type="submit"
-                        >
-                            Confirm Delete
-                        </twig:Button>
-                    </label>
-                </form>
-            </twig:block>
-        </twig:Modal>
+            <input type="hidden" name="_token" value="{{ csrf_token('game-archive-' ~ game.id) }}">
+            <twig:Button type="submit" variant="{{ game.archived ? 'success' : 'danger' }}">
+                {{ game.archived ? 'Désarchiver la partie' : 'Archiver la partie' }}
+            </twig:Button>
+        </form>
 
         <twig:Button
                 href="{{ path('show_encyclopedia') }}"

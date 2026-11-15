@@ -132,8 +132,6 @@ class BackOfficeAccessControlTest extends WebTestCase
         self::assertResponseStatusCodeSame(403);
         $this->client->request('GET', "/npcs/$npcId/delete");
         self::assertResponseStatusCodeSame(403);
-        $this->client->request('POST', "/games/{$this->game->getId()}/delete", ['gameNameConfirmation' => 'Les Terres Brûlées']);
-        self::assertResponseStatusCodeSame(403);
 
         self::assertNotNull(self::getContainer()->get(MonsterRepository::class)->find($monsterId));
         self::assertNotNull(self::getContainer()->get(NonPlayableCharacterRepository::class)->find($npcId));

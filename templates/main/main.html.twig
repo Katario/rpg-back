@@ -11,23 +11,8 @@
         </div>
 
         <ul class="flex flex-wrap flex-col gap-8 md:flex-row">
-            {% for game in games %}
-                <li>
-                    <twig:Button
-                        tag="a"
-                        href="{{ path('show_game', {'id': game.id}) }}"
-                        variant="card"
-                        class="flex-col px-0 py-0"
-                    >
-                        <div class="w-full bg-gray-300">
-                            {{ game.name}}
-                        </div>
-                        <div>
-                            MJ<br />
-                            Number of players
-                        </div>
-                    </twig:Button>
-                </li>
+            {% for game in games|filter(game => not game.archived) %}
+                <li>{{ _self.gameCard(game) }}</li>
             {% endfor %}
             <li class="">
                 <twig:Button
@@ -40,5 +25,34 @@
                 </twig:Button>
             </li>
         </ul>
+
+        {% set archivedGames = games|filter(game => game.archived) %}
+        {% if archivedGames is not empty %}
+            <section aria-labelledby="archived-games-title" class="mt-8">
+                <h2 id="archived-games-title" class="text-2xl">Parties archivées</h2>
+                <ul class="flex flex-wrap flex-col gap-8 md:flex-row">
+                    {% for game in archivedGames %}
+                        <li>{{ _self.gameCard(game) }}</li>
+                    {% endfor %}
+                </ul>
+            </section>
+        {% endif %}
     </main>
 {% endblock %}
+
+{% macro gameCard(game) %}
+    <twig:Button
+        tag="a"
+        href="{{ path('show_game', {'id': game.id}) }}"
+        variant="card"
+        class="flex-col px-0 py-0"
+    >
+        <div class="w-full bg-gray-300">
+            {{ game.name }}
+        </div>
+        <div>
+            MJ : {{ game.gameMaster.displayName }}<br />
+            {{ game.memberships|length }} joueur{{ game.memberships|length > 1 ? 's' }}
+        </div>
+    </twig:Button>
+{% endmacro %}

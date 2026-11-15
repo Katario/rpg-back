@@ -13,6 +13,7 @@ use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpKernel\Attribute\AsController;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
@@ -37,6 +38,10 @@ class GamePlayerController
     #[IsCsrfTokenValid(new Expression('"game-invite-code-" ~ args["game"].getId()'))]
     public function generateInviteCode(#[MapEntity(id: 'id')] Game $game): RedirectResponse
     {
+        if ($game->isArchived()) {
+            throw new ConflictHttpException('An archived game cannot be opened to new players.');
+        }
+
         $this->gameMembershipManager->generateInviteCode($game);
 
         return $this->toGame($game);

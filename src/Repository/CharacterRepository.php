@@ -44,17 +44,6 @@ class CharacterRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    public function deleteFromGame(int $gameId): void
-    {
-        $this->createQueryBuilder('c')
-            ->delete()
-            ->where('c.game = :gameId')
-            ->setParameter('gameId', $gameId)
-            ->getQuery()
-            ->getResult()
-        ;
-    }
-
     public function delete(Character $character): void
     {
         $this->getEntityManager()->remove($character);

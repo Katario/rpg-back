@@ -7,14 +7,11 @@ namespace App\Controller;
 use App\Entity\Game;
 use App\Entity\User;
 use App\FormType\GameType;
-use App\Repository\CharacterRepository;
-use App\Repository\EquipmentRepository;
 use App\Repository\GameRepository;
-use App\Repository\MonsterRepository;
-use App\Repository\NonPlayableCharacterRepository;
 use App\Security\Voter\GameVoter;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\SecurityBundle\Security;
+use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,6 +19,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Security\Http\Attribute\IsCsrfTokenValid;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Twig\Environment;
 
@@ -76,35 +74,28 @@ class GameController
         );
     }
 
-    #[Route('/games/{id}/delete',
-        name: 'delete_game',
-        requirements: ['id' => '\d+'],
-        methods: ['POST']
-    )]
+    /**
+     * Archiving replaces deletion: nothing is deleted, the game is hidden and closed (see docs/game.md).
+     */
+    #[Route('/games/{id}/archive', name: 'archive_game', requirements: ['id' => '\d+'], methods: ['POST'])]
     #[IsGranted(GameVoter::MANAGE, 'game')]
-    public function deleteGame(
-        #[MapEntity(id: 'id')] Game $game,
-        Request $request,
-        EquipmentRepository $armamentRepository,
-        MonsterRepository $monsterRepository,
-        CharacterRepository $characterRepository,
-        NonPlayableCharacterRepository $nonPlayableCharacterRepository,
-    ): Response {
-        $gameNameConfirmation = $request->get('gameNameConfirmation');
-        if ($gameNameConfirmation !== $game->getName()) {
-            return new RedirectResponse($this->router->generate(
-                'show_game', [
-                    'id' => $game->getId(),
-                ]
-            ));
-        }
+    #[IsCsrfTokenValid(new Expression('"game-archive-" ~ args["game"].getId()'))]
+    public function archiveGame(#[MapEntity(id: 'id')] Game $game): RedirectResponse
+    {
+        $game->archive();
+        $this->gameRepository->save($game);
 
-        $armamentRepository->deleteFromGame($game->getId());
-        $monsterRepository->deleteFromGame($game->getId());
-        $characterRepository->deleteFromGame($game->getId());
-        $nonPlayableCharacterRepository->deleteFromGame($game->getId());
-        $this->gameRepository->delete($game);
+        return new RedirectResponse($this->router->generate('show_game', ['id' => $game->getId()]));
+    }
 
-        return new RedirectResponse($this->router->generate('home'));
+    #[Route('/games/{id}/unarchive', name: 'unarchive_game', requirements: ['id' => '\d+'], methods: ['POST'])]
+    #[IsGranted(GameVoter::MANAGE, 'game')]
+    #[IsCsrfTokenValid(new Expression('"game-archive-" ~ args["game"].getId()'))]
+    public function unarchiveGame(#[MapEntity(id: 'id')] Game $game): RedirectResponse
+    {
+        $game->unarchive();
+        $this->gameRepository->save($game);
+
+        return new RedirectResponse($this->router->generate('show_game', ['id' => $game->getId()]));
     }
 }

@@ -65,7 +65,7 @@ class CharacterController
             $character,
             [
                 'gameId' => $character->getGame()->getId(),
-                'gameMasterId' => $character->getId(),
+                'currentOwnerId' => $character->getUser()?->getId(),
             ]
         );
 
@@ -149,7 +149,6 @@ class CharacterController
             CharacterType::class,
             $character, [
                 'gameId' => $game->getId(),
-                'gameMasterId' => $game->getGameMaster()->getId(),
             ]
         );
 

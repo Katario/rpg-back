@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Character;
+use App\Entity\GameMembership;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
@@ -49,25 +50,44 @@ class UserRepository extends ServiceEntityRepository implements UserLoaderInterf
         return $user;
     }
 
-    public function getAvailableForNewCharacterUser(int $gameId, int $userId): QueryBuilder
+    /**
+     * Who can be given a character of the game (back office character form): its players (memberships) who have no
+     * character in the game yet, plus the current owner so that editing a character keeps them.
+     */
+    public function playersAvailableForCharacterQueryBuilder(int $gameId, ?int $currentOwnerId = null): QueryBuilder
     {
         $queryBuilder = $this->createQueryBuilder('u');
+        $expr = $queryBuilder->expr();
 
-        return $queryBuilder
-            ->where(
-                $queryBuilder->expr()->not(
-                    $queryBuilder->expr()->exists(
-                        $this->createQueryBuilder('uc')
-                            ->from(Character::class, 'c')
-                            ->where('c.game = :gameId')
-                            ->andWhere('c.user = u.id')
-                            ->getDQL()
-                    )
-                )
-            )
-            ->andWhere('u.id != :userId')
+        $isAvailablePlayer = $expr->andX(
+            $expr->exists(
+                $this->getEntityManager()->createQueryBuilder()
+                    ->select('m.id')
+                    ->from(GameMembership::class, 'm')
+                    ->where('m.game = :gameId')
+                    ->andWhere('m.user = u')
+                    ->getDQL()
+            ),
+            $expr->not($expr->exists(
+                $this->getEntityManager()->createQueryBuilder()
+                    ->select('c.id')
+                    ->from(Character::class, 'c')
+                    ->where('c.game = :gameId')
+                    ->andWhere('c.user = u')
+                    ->getDQL()
+            )),
+        );
+
+        $queryBuilder
+            ->where(null === $currentOwnerId ? $isAvailablePlayer : $expr->orX($isAvailablePlayer, 'u.id = :currentOwnerId'))
             ->setParameter('gameId', $gameId)
-            ->setParameter('userId', $userId);
+            ->orderBy('u.email', 'ASC');
+
+        if (null !== $currentOwnerId) {
+            $queryBuilder->setParameter('currentOwnerId', $currentOwnerId);
+        }
+
+        return $queryBuilder;
     }
 
     public function delete(User $user): void

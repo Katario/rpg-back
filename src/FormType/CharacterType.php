@@ -84,9 +84,9 @@ class CharacterType extends AbstractType
                 'class' => User::class,
                 'choice_label' => 'displayName',
                 'query_builder' => function (UserRepository $userRepository) use ($options): QueryBuilder {
-                    return $userRepository->getAvailableForNewCharacterUser(
+                    return $userRepository->playersAvailableForCharacterQueryBuilder(
                         $options['gameId'],
-                        $options['gameMasterId']
+                        $options['currentOwnerId'],
                     );
                 },
                 'placeholder' => 'Nobody',
@@ -104,7 +104,8 @@ class CharacterType extends AbstractType
             'data_class' => Character::class,
             'gameId' => null,
             'characterId' => null,
-            'gameMasterId' => null,
+            // Owner of the edited character, kept in the player choices (null for a new character).
+            'currentOwnerId' => null,
         ]);
     }
 }

@@ -50,6 +50,12 @@ On the game page (`/games/{id}`, `GameVoter::MANAGE`):
 - **Players** block: the members, with their join date; remove one (confirmation; their characters are disabled).
 - **Characters** block: each card shows the player and a disable / enable button (`toggle_character`,
   `CharacterVoter::EDIT`).
+- **Archive / unarchive** button (`archive_game`, `unarchive_game`): replaces the former deletion. An archived game
+  shows a banner instead of the invitation block (generating a code for it → `409`).
+- **Home page**: active games first, archived games in a separate "Parties archivées" section; each card shows the game
+  master and the number of players.
+- **Character form** (`CharacterType`, field `user`): only the game's players without a character in the game yet, plus
+  the current owner when editing (`UserRepository::playersAvailableForCharacterQueryBuilder()`).
 
 Every action is a `POST` with a CSRF token (`#[IsCsrfTokenValid]`, checked before the permission), then redirects to
 the game page.
