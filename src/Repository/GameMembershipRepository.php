@@ -24,4 +24,25 @@ class GameMembershipRepository extends ServiceEntityRepository
     {
         return $this->findOneBy(['game' => $game, 'user' => $user]);
     }
+
+    /**
+     * The games the user plays in (not the ones they run), with the game and its game master loaded.
+     *
+     * @return list<GameMembership>
+     */
+    public function findByPlayer(User $user): array
+    {
+        /** @var list<GameMembership> $memberships */
+        $memberships = $this->createQueryBuilder('m')
+            ->addSelect('g', 'gm')
+            ->join('m.game', 'g')
+            ->join('g.gameMaster', 'gm')
+            ->where('m.user = :user')
+            ->setParameter('user', $user)
+            ->orderBy('g.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        return $memberships;
+    }
 }

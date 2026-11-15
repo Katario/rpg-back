@@ -60,6 +60,12 @@ On the game page (`/games/{id}`, `GameVoter::MANAGE`):
 Every action is a `POST` with a CSRF token (`#[IsCsrfTokenValid]`, checked before the permission), then redirects to
 the game page.
 
+## Player API
+
+`App\Controller\Api\GameController` (account required): `GET /api/games`, `POST /api/games/join`,
+`POST /api/games/{id}/leave` — see `docs/api.md`. Joining is rate limited (`game_join` limiter: 10 attempts per
+15 minutes per user, every attempt counts).
+
 ## Permissions
 
 `App\Security\Voter\GameVoter`:

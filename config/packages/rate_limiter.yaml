@@ -7,3 +7,9 @@ framework:
             limit: 10
             interval: '1 hour'
 
+        # Attempts to join a game with an invite code (POST /api/games/join), keyed by user. Every attempt counts:
+        # codes cannot be guessed (~10^12 combinations) but probing stays slow and visible.
+        game_join:
+            policy: sliding_window
+            limit: 10
+            interval: '15 minutes'

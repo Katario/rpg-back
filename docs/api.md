@@ -19,6 +19,9 @@ Two ways to access it, side by side:
 | `GET` | `/api/me` | The authenticated user: `{ id, email, username, displayName, roles }` (`App\Serializer\UserSerializer`). `401` without a valid token. |
 | `GET` | `/api/me/characters` | Characters owned by the user, sorted by name: `[{ id, token, name, lastName, level, disabled, avatarUrl, kind, characterClass, game: { id, name } }]` (`CharacterSerializer::summarize()`). The sheet itself is read and played through the `{token}` routes. |
 | `POST` | `/api/me/characters/claim` | Links an existing sheet to the user. Body `{ token }` (the character token). `200` → the summary (also when already owned by the user); `404` unknown token; `409` owned by another account; `400` missing token. |
+| `GET` | `/api/games` | Games the user **plays in** (memberships; not the ones they run, managed in the back office), sorted by name: `[{ id, name, gameMaster: { username }, joinedAt, archived }]` (`App\Serializer\GameSerializer`). `gameMaster.username` may be `null`: the game master's email is never exposed to players. Archived games are included (`archived: true`): their characters still work. |
+| `POST` | `/api/games/join` | Join a game. Body `{ code }`, the invite code as typed (case, spaces and dashes ignored). `200` → the game (same shape as the list); idempotent. `404` no open game has this code (unknown, deleted, or archived game: same answer); `409` the user is the game master; `400` missing code; `429` after 10 attempts per 15 minutes per user. |
+| `POST` | `/api/games/{id}/leave` | Leave a game. `204`; the player keeps their characters of the game but they are **disabled** (read-only). `404` for an unknown game or a game the user does not play in. |
 
 Validation errors on account routes: `422` with field-indexed messages, so the client can display them next to each field:
 

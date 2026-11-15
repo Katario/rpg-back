@@ -85,6 +85,8 @@ No global "game master" role: a user is the GM of the games they created (`Game.
 - **Registration** (limiter `registration` in `config/packages/rate_limiter.yaml`, API and web sign-up): 10 attempts per
   hour per IP, failed ones included (it also slows down probing which emails have an account). API: `429` + `Retry-After`;
   web: the form is re-rendered with an error (`429`).
+- **Joining a game** (limiter `game_join`, `POST /api/games/join`): 10 attempts per 15 minutes per user, every attempt
+  counts. `429` + `Retry-After`.
 - Tests: `App\Tests\Support\ResetsRateLimiters` clears the pool before each test (an in-memory pool would not work:
   the kernel resets it between requests, even with `disableReboot()`).
 - Behind a reverse proxy, limits are keyed by `Request::getClientIp()`: configure `trusted_proxies`, otherwise every
