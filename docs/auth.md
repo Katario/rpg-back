@@ -62,6 +62,7 @@ No global "game master" role: a user is the GM of the games they created (`Game.
 - **`App\Security\Voter\GameVoter`** — `GameVoter::MANAGE`: the game's GM, or an admin. The subject is a `Game` or anything
   that belongs to one (`Being`: characters, monsters, NPCs; `Equipment`). Applied to every game page of the back office
   (show / delete game, show / edit / delete / generate monsters, NPCs, armaments, character generation).
+- `GameVoter::PLAY`: the game's players (`GameMembership`) and its GM, while the game is not archived (see `docs/game.md`).
 - **`App\Security\Voter\CharacterVoter`** — `VIEW`: the owner or whoever manages the game; `EDIT` / `DELETE`: whoever manages
   the game only (the character form can reassign the player).
 - **Home page**: a GM sees their games, an admin sees every game.

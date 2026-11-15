@@ -14,15 +14,17 @@ use Symfony\Component\Security\Core\Authorization\Voter\Vote;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
 /**
- * Managing a game and everything in it (characters, monsters, NPCs, armaments): its game master, or an admin.
- *
- * The subject is the game itself or any entity that belongs to one.
+ * - MANAGE: managing a game and everything in it (characters, monsters, NPCs, armaments): its game master, or an admin.
+ *   The subject is the game itself or any entity that belongs to one.
+ * - PLAY: playing in a game (e.g. importing a character into it): its players and its game master, while the game is
+ *   not archived. The subject is the game.
  *
  * @extends Voter<string, Game|Being|Equipment>
  */
 class GameVoter extends Voter
 {
     public const string MANAGE = 'GAME_MANAGE';
+    public const string PLAY = 'GAME_PLAY';
 
     public function __construct(
         private readonly AccessDecisionManagerInterface $accessDecisionManager,
@@ -31,8 +33,11 @@ class GameVoter extends Voter
 
     protected function supports(string $attribute, mixed $subject): bool
     {
-        return self::MANAGE === $attribute
-            && ($subject instanceof Game || $subject instanceof Being || $subject instanceof Equipment);
+        return match ($attribute) {
+            self::MANAGE => $subject instanceof Game || $subject instanceof Being || $subject instanceof Equipment,
+            self::PLAY => $subject instanceof Game,
+            default => false,
+        };
     }
 
     protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token, ?Vote $vote = null): bool
@@ -42,12 +47,12 @@ class GameVoter extends Voter
             return false;
         }
 
-        if ($this->accessDecisionManager->decide($token, ['ROLE_ADMIN'])) {
-            return true;
-        }
-
         $game = $subject instanceof Game ? $subject : $subject->getGame();
 
-        return $game->getGameMaster()->getId() === $user->getId();
+        if (self::PLAY === $attribute) {
+            return !$game->isArchived() && ($game->isGameMaster($user) || $game->hasMember($user));
+        }
+
+        return $game->isGameMaster($user) || $this->accessDecisionManager->decide($token, ['ROLE_ADMIN']);
     }
 }

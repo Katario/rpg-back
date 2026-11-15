@@ -25,6 +25,30 @@ invite code. Every character belongs to exactly one game.
   the invite code; `Game::unarchive()` does not reopen the game. An archived game is hidden and closed to new
   players, its characters keep working.
 
+## Players & invite codes
+
+`App\Game\GameMembershipManager` (every method flushes):
+
+- `generateInviteCode(Game)`: creates or **replaces** the code (the previous one stops working); refused for an archived
+  game. `deleteInviteCode(Game)`: closes the game.
+- `join(User, code)`: the code as typed by the player (`App\Game\InviteCode::normalize()`: case, spaces and dashes do not
+  matter). Idempotent. `InviteCodeNotFoundException` for an unknown or malformed code, or an archived game (no
+  distinction, so codes cannot be probed); `GameMasterCannotJoinException` for the game master.
+- `leave(Game, User)` (the player) / `remove(Game, User)` (the game master): deletes the membership and **disables** the
+  player's characters of that game — they keep them. `NotAMemberException` if the user is not a player.
+  Rejoining does not enable them again: the game master does.
+
+Invite codes (`App\Game\InviteCode`): 8 characters from `ABCDEFGHJKLMNPQRSTUVWXYZ23456789` (no look-alikes `0/O`,
+`1/I`), stored as `K7QM3XPA`, displayed as `K7QM-3XPA` (`InviteCode::format()`).
+
+## Permissions
+
+`App\Security\Voter\GameVoter`:
+
+- `MANAGE` — the game master, or an admin; the subject is a `Game` or anything belonging to one (back office).
+- `PLAY` — the players and the game master, while the game is **not archived** (e.g. importing a character into it);
+  the subject is a `Game`. Admins get no implicit `PLAY`.
+
 ## Disabled characters
 
 `Character.isDisabled` (`being.is_disabled`, default `false`): a disabled sheet is **read-only on the API**. It stays
