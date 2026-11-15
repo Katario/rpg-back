@@ -5,6 +5,9 @@
     <main class="p-12 flex flex-col bg-emerald-100 gap-8">
         <h1 class="text-3xl self-center text-center">Partie {{ game.name }}</h1>
 
+        {{ include('game/_invitation.html.twig') }}
+
+        {{ include('game/_players.html.twig') }}
 
         <twig:Molecule:CharacterBlock
             game="{{ game }}"

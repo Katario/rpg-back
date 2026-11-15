@@ -15,9 +15,7 @@ use App\Game\Exception\InviteCodeNotFoundException;
 use App\Game\Exception\NotAMemberException;
 use App\Game\GameMembershipManager;
 use App\Game\InviteCode;
-use App\Repository\CharacterRepository;
 use App\Repository\GameMembershipRepository;
-use App\Repository\GameRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -39,13 +37,7 @@ class GameMembershipManagerTest extends KernelTestCase
 
     protected function setUp(): void
     {
-        // Built by hand: until a controller uses it, the private service is removed from the compiled container.
-        $container = self::getContainer();
-        $this->manager = new GameMembershipManager(
-            $container->get(EntityManagerInterface::class),
-            $container->get(GameRepository::class),
-            $container->get(CharacterRepository::class),
-        );
+        $this->manager = self::getContainer()->get(GameMembershipManager::class);
         $this->gameMaster = UserFactory::createOne()->_real();
         $this->game = GameFactory::createOne(['gameMaster' => $this->gameMaster])->_real();
     }

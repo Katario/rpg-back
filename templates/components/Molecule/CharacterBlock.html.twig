@@ -16,7 +16,21 @@
                     subtitle="{{ character.characterClass.name }}"
                     imagePath="{{ asset('images/warrior.png') }}"
                 >
-                    <span class="basis-1/4">Test</span>
+                    <div class="flex flex-col gap-1">
+                        <span>Joueur : {{ character.user ? character.user.displayName : '-' }}</span>
+                        {# A disabled sheet is read-only on the API (see docs/game.md). #}
+                        <form
+                            method="POST"
+                            data-turbo="false"
+                            action="{{ path('toggle_character', {gameId: game.id, id: character.id, state: character.disabled ? 'enable' : 'disable'}) }}"
+                        >
+                            {% if character.disabled %}<span class="font-bold text-red-700">Désactivée</span>{% endif %}
+                            <input type="hidden" name="_token" value="{{ csrf_token('character-toggle-' ~ character.id) }}">
+                            <twig:Button type="submit" variant="link" class="px-0 py-0 underline">
+                                {{ character.disabled ? 'Réactiver' : 'Désactiver' }}
+                            </twig:Button>
+                        </form>
+                    </div>
                 </twig:Card>
             </li>
         {% endfor %}

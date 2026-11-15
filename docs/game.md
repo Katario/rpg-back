@@ -41,6 +41,19 @@ invite code. Every character belongs to exactly one game.
 Invite codes (`App\Game\InviteCode`): 8 characters from `ABCDEFGHJKLMNPQRSTUVWXYZ23456789` (no look-alikes `0/O`,
 `1/I`), stored as `K7QM3XPA`, displayed as `K7QM-3XPA` (`InviteCode::format()`).
 
+## Back office (game master)
+
+On the game page (`/games/{id}`, `GameVoter::MANAGE`):
+
+- **Invitation** block: the code (`invite_code` Twig filter → `K7QM-3XPA`), or "closed"; create / replace / delete it
+  (`App\Controller\GamePlayerController`). There is no link: players type the code in the player app.
+- **Players** block: the members, with their join date; remove one (confirmation; their characters are disabled).
+- **Characters** block: each card shows the player and a disable / enable button (`toggle_character`,
+  `CharacterVoter::EDIT`).
+
+Every action is a `POST` with a CSRF token (`#[IsCsrfTokenValid]`, checked before the permission), then redirects to
+the game page.
+
 ## Permissions
 
 `App\Security\Voter\GameVoter`:

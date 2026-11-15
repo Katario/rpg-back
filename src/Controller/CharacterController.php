@@ -14,6 +14,7 @@ use App\Security\Voter\CharacterVoter;
 use App\Security\Voter\GameVoter;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\SecurityBundle\Security;
+use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -21,6 +22,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Security\Http\Attribute\IsCsrfTokenValid;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Twig\Environment;
 
@@ -100,6 +102,26 @@ class CharacterController
         $this->characterRepository->delete($character);
 
         return new RedirectResponse($this->router->generate('show_game', ['id' => $gameId]));
+    }
+
+    /**
+     * Disables or enables a character (a disabled sheet is read-only on the API, see docs/game.md).
+     */
+    #[Route('/games/{gameId}/characters/{id}/{state}',
+        name: 'toggle_character',
+        requirements: ['gameId' => '\d+', 'id' => '\d+', 'state' => 'disable|enable'],
+        methods: ['POST']
+    )]
+    #[IsGranted(CharacterVoter::EDIT, 'character')]
+    #[IsCsrfTokenValid(new Expression('"character-toggle-" ~ args["character"].getId()'))]
+    public function toggleCharacter(
+        #[MapEntity(id: 'id')] Character $character,
+        string $state,
+    ): RedirectResponse {
+        'disable' === $state ? $character->disable() : $character->enable();
+        $this->characterRepository->save($character);
+
+        return new RedirectResponse($this->router->generate('show_game', ['id' => $character->getGame()->getId()]));
     }
 
     #[Route('/games/{gameId}/characters/generate',

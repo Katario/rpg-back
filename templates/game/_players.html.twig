@@ -1,0 +1,27 @@
+{# Players of the game (memberships). Removing a player disables their characters of the game, they keep them. #}
+<section class="bg-violet-200 p-4 flex flex-col gap-2" aria-labelledby="game-players-title">
+    <h2 id="game-players-title" class="text-2xl">Joueurs</h2>
+
+    {% if game.memberships is empty %}
+        <p>Aucun joueur n'a encore rejoint la partie.</p>
+    {% else %}
+        <ul class="flex flex-col gap-2">
+            {% for membership in game.memberships %}
+                {% set player = membership.user %}
+                <li class="flex flex-row items-center gap-4">
+                    <span>{{ player.displayName }}</span>
+                    <span class="text-sm italic">depuis le {{ membership.joinedAt|date('d/m/Y') }}</span>
+                    <form
+                        method="POST"
+                        data-turbo="false"
+                        action="{{ path('remove_game_player', {id: game.id, userId: player.id}) }}"
+                        onsubmit="return confirm('Retirer {{ player.displayName|e('js') }} de la partie ? Ses fiches seront désactivées.')"
+                    >
+                        <input type="hidden" name="_token" value="{{ csrf_token('game-player-remove-' ~ game.id ~ '-' ~ player.id) }}">
+                        <twig:Button type="submit" variant="danger">Retirer</twig:Button>
+                    </form>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</section>

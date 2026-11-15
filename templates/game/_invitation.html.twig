@@ -1,0 +1,30 @@
+{# Invite code of the game: players type it in the player app to join (see docs/game.md). #}
+<section class="bg-sky-200 p-4 flex flex-col gap-2" aria-labelledby="game-invitation-title">
+    <h2 id="game-invitation-title" class="text-2xl">Invitation</h2>
+
+    {% if game.inviteCode %}
+        <p>
+            Code à donner aux joueurs :
+            <strong class="font-mono text-xl tracking-widest">{{ game.inviteCode|invite_code }}</strong>
+        </p>
+        <p class="text-sm">Tant que ce code existe, n'importe qui le connaissant peut rejoindre la partie.</p>
+    {% else %}
+        <p>La partie est fermée : personne ne peut la rejoindre.</p>
+    {% endif %}
+
+    <div class="flex flex-row gap-4">
+        <form method="POST" data-turbo="false" action="{{ path('generate_game_invite_code', {id: game.id}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('game-invite-code-' ~ game.id) }}">
+            <twig:Button type="submit">
+                {{ game.inviteCode ? 'Remplacer le code' : 'Créer un code' }}
+            </twig:Button>
+        </form>
+
+        {% if game.inviteCode %}
+            <form method="POST" data-turbo="false" action="{{ path('delete_game_invite_code', {id: game.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('game-invite-code-' ~ game.id) }}">
+                <twig:Button type="submit" variant="danger">Supprimer le code</twig:Button>
+            </form>
+        {% endif %}
+    </div>
+</section>
