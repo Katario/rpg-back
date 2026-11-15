@@ -71,7 +71,7 @@ abstract class Being
     protected int $maxMentalPoints;
 
     #[ORM\ManyToOne(targetEntity: Game::class)]
-    #[ORM\JoinColumn(name: 'game_id', referencedColumnName: 'id')]
+    #[ORM\JoinColumn(name: 'game_id', referencedColumnName: 'id', nullable: false)]
     protected Game $game;
 
     #[ORM\JoinTable(name: 'being_spells')]

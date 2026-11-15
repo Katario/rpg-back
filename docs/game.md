@@ -8,7 +8,11 @@ invite code. Every character belongs to exactly one game.
 
 ## Model
 
-- **`Game`**: `name`, `note`, `gameMaster` (a `User`), `inviteCode`, `archivedAt`, plus the beings and equipment of the game.
+- **`Game`**: `name`, `note`, `gameMaster` (a `User`, required), `inviteCode`, `archivedAt`.
+- **Belonging to a game** (required, `NOT NULL`): every `Being` (characters, monsters, NPCs: `being.game_id`) and every
+  `Equipment` (`equipment.game_id`). `Game` has no inverse collection for beings — `Being.game` is declared on the
+  abstract STI root, which Doctrine cannot map to one collection per subclass: query `CharacterRepository`,
+  `MonsterRepository`… (`findByGameBySearch()`). `Game::getEquipments()` remains.
 - **`GameMembership`** (table `game_membership`): a player of a game — `game`, `user`, `joinedAt`, unique per
   (game, user). The game master is **never** a member of their own game (`Game::addMember()` refuses it).
   - `Game::addMember()` is idempotent; `Game::removeMember()` deletes the membership only (orphan removal):
@@ -26,3 +30,6 @@ invite code. Every character belongs to exactly one game.
 `Version20261115210404` is additive (new table, two nullable columns). Players were implicit before (owners of a
 character of the game): every character owner becomes a member of the game of their character, except the game master.
 Existing games start closed (no invite code).
+
+`Version20261115212047` sets `game.game_master`, `being.game_id` and `equipment.game_id` to `NOT NULL`. It rewrites no
+data: it stops, with nothing applied, if a row still has no game / game master (production inventory of 2026-11-15: none).

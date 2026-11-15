@@ -27,12 +27,14 @@ final class GameFactory extends PersistentProxyObjectFactory
     /**
      * @see https://symfony.com/bundles/ZenstruckFoundryBundle/current/index.html#model-factories
      *
-     * @return array<bool|\DateTimeImmutable|int|string>
+     * @return array<string, mixed>
      */
     protected function defaults(): array
     {
         return [
             'name' => self::faker()->text(),
+            // Every game has a game master (NOT NULL).
+            'gameMaster' => UserFactory::new(),
         ];
     }
 

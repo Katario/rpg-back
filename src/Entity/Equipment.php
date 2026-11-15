@@ -48,6 +48,7 @@ abstract class Equipment
     private bool $isEquipped = false;
 
     #[ORM\ManyToOne(targetEntity: Game::class, inversedBy: 'equipments')]
+    #[ORM\JoinColumn(nullable: false)]
     private Game $game;
 
     #[ORM\ManyToOne(targetEntity: Being::class, inversedBy: 'equipments')]
