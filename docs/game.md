@@ -73,7 +73,8 @@ the game page.
   defaults to `1`, any game — except that archived games are refused (`409`), like for a signed-in import.
 - **Claiming a sheet** (`POST /api/me/characters/claim`) makes its owner a player of the sheet's game
   (`GameMembershipManager::addOwnerAsPlayer()`, no invite code needed: holding the sheet token is the proof), except
-  the game master. An idempotent claim also adds a missing membership.
+  the game master. Only a **new** claim does: re-claiming a sheet the user already owns adds nothing, so a removed player
+  cannot come back that way.
 - The character token routes stay public and unchanged (owned and disabled sheets included, see above).
 
 ## Permissions

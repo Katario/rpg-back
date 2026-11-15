@@ -13,6 +13,7 @@ use App\Fixtures\DataFixtures\Factory\UserFactory;
 use App\Repository\CharacterRepository;
 use App\Serializer\CharacterSerializer;
 use App\Tests\Support\IssuesApiTokens;
+use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -91,6 +92,21 @@ class MyCharacterControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSame($user->getId(), $this->character('zora-token')->getUser()?->getId());
+    }
+
+    public function testARemovedPlayerCannotComeBackByClaimingTheirSheetAgain(): void
+    {
+        $client = static::createClient();
+        $player = UserFactory::createOne()->_real();
+        $game = GameFactory::createOne()->_real();
+        $character = CharacterFactory::createOne(['user' => $player, 'game' => $game, 'token' => 'zora-token'])->_real();
+        $character->disable(); // removed by the game master: no membership any more, the sheet is disabled
+        self::getContainer()->get(EntityManagerInterface::class)->flush();
+
+        $this->claim($client, $this->issueApiToken($player), 'zora-token');
+
+        self::assertResponseIsSuccessful();
+        self::assertCount(0, $this->character('zora-token')->getGame()->getMemberships());
     }
 
     public function testTheGameMasterClaimingASheetOfTheirGameDoesNotBecomeAPlayer(): void

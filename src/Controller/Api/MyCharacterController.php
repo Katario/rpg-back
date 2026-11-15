@@ -65,12 +65,13 @@ class MyCharacterController extends AbstractController
             return $this->json(['error' => 'This character already belongs to another account'], Response::HTTP_CONFLICT);
         }
 
+        // Only a new claim makes the user a player of the sheet's game: re-claiming an owned sheet must not bring back
+        // a player the game master removed (their sheets stay owned, but disabled).
         if (!$owner) {
             $character->setUser($user);
+            $characterRepository->save($character);
+            $gameMembershipManager->addOwnerAsPlayer($character->getGame(), $user);
         }
-        // Owning a sheet makes the user a player of its game (also repairs an older claim).
-        $gameMembershipManager->addOwnerAsPlayer($character->getGame(), $user);
-        $characterRepository->save($character);
 
         return $this->json($characterSerializer->summarize($character, $request->getSchemeAndHttpHost()));
     }
