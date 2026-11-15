@@ -34,6 +34,15 @@ class Game
     private Collection|array $monsters;
     #[ORM\OneToMany(targetEntity: NonPlayableCharacter::class, mappedBy: 'game')]
     private Collection|array $nonPlayableCharacters;
+    /** @var Collection<int, GameMembership> */
+    #[ORM\OneToMany(targetEntity: GameMembership::class, mappedBy: 'game', cascade: ['persist'], orphanRemoval: true)]
+    private Collection $memberships;
+    // Null: the game is closed, nobody can join it. Stored normalized: 8 uppercase characters, no dash.
+    #[ORM\Column(type: 'string', length: 8, unique: true, nullable: true)]
+    private ?string $inviteCode = null;
+    // Archived games are kept (no data is ever deleted) but hidden and closed to new players.
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    private ?\DateTimeImmutable $archivedAt = null;
 
     public function __construct()
     {
@@ -41,6 +50,7 @@ class Game
         $this->equipments = new ArrayCollection();
         $this->monsters = new ArrayCollection();
         $this->nonPlayableCharacters = new ArrayCollection();
+        $this->memberships = new ArrayCollection();
     }
 
     public function getId(): int
@@ -176,5 +186,112 @@ class Game
         }
 
         return $this;
+    }
+
+    public function isGameMaster(User $user): bool
+    {
+        return self::isSameUser($this->gameMaster, $user);
+    }
+
+    /**
+     * @return Collection<int, GameMembership>
+     */
+    public function getMemberships(): Collection
+    {
+        return $this->memberships;
+    }
+
+    public function hasMember(User $user): bool
+    {
+        return null !== $this->findMembership($user);
+    }
+
+    /**
+     * Idempotent: joining twice returns the existing membership.
+     */
+    public function addMember(User $user, \DateTimeImmutable $now = new \DateTimeImmutable()): GameMembership
+    {
+        if ($this->isGameMaster($user)) {
+            throw new \LogicException('The game master cannot join their own game as a player.');
+        }
+
+        $membership = $this->findMembership($user);
+        if (null === $membership) {
+            $membership = new GameMembership($this, $user, $now);
+            $this->memberships->add($membership);
+        }
+
+        return $membership;
+    }
+
+    /**
+     * Deletes the membership only (orphan removal): the player's characters are left untouched.
+     */
+    public function removeMember(User $user): void
+    {
+        $membership = $this->findMembership($user);
+        if (null !== $membership) {
+            $this->memberships->removeElement($membership);
+        }
+    }
+
+    public function getInviteCode(): ?string
+    {
+        return $this->inviteCode;
+    }
+
+    /**
+     * @param string|null $inviteCode a normalized code, or null to close the game
+     */
+    public function setInviteCode(?string $inviteCode): Game
+    {
+        $this->inviteCode = $inviteCode;
+
+        return $this;
+    }
+
+    public function getArchivedAt(): ?\DateTimeImmutable
+    {
+        return $this->archivedAt;
+    }
+
+    public function isArchived(): bool
+    {
+        return null !== $this->archivedAt;
+    }
+
+    /**
+     * Also closes the game: an archived game cannot be joined.
+     */
+    public function archive(\DateTimeImmutable $now = new \DateTimeImmutable()): Game
+    {
+        $this->archivedAt ??= $now;
+        $this->inviteCode = null;
+
+        return $this;
+    }
+
+    public function unarchive(): Game
+    {
+        $this->archivedAt = null;
+
+        return $this;
+    }
+
+    private function findMembership(User $user): ?GameMembership
+    {
+        foreach ($this->memberships as $membership) {
+            if (self::isSameUser($membership->getUser(), $user)) {
+                return $membership;
+            }
+        }
+
+        return null;
+    }
+
+    // Same object, or same database row (two instances of one user loaded separately).
+    private static function isSameUser(User $a, User $b): bool
+    {
+        return $a === $b || (null !== $a->getId() && $a->getId() === $b->getId());
     }
 }
